@@ -13,6 +13,17 @@ function EventCore.EmitServer(eventName, payload)
     return EventCore.DispatchLocal(eventName, payload, -1)
 end
 
+local function exportContext(context)
+    return {
+        name = context.name,
+        data = context.data,
+        source = context.source,
+        timestamp = context.timestamp,
+        cancelled = context.isCancelled(),
+        cancelReason = context.getCancelReason(),
+    }
+end
+
 --- Send an event to a specific client player
 function EventCore.EmitClient(eventName, targetPlayer, payload)
     if not targetPlayer then
@@ -84,17 +95,16 @@ end
 
 -- Export functions for other Open77 resources
 if exports then
-    exports("AllowClientEvent", EventCore.AllowClientEvent)
-    exports("On", function(eventName, cb, priority)
-        return EventCore.On(eventName, cb, priority)
-    end)
-
-    exports("Off", function(eventName, id)
-        return EventCore.Off(eventName, id)
+    exports("AllowClientEvent", function(eventName)
+        local caller = GetInvokingResource and GetInvokingResource() or nil
+        if not EventCore.Persistence or not EventCore.Persistence.IsTrustedCaller(caller) then
+            return false, "client_event_caller_not_trusted"
+        end
+        return EventCore.AllowClientEvent(eventName)
     end)
 
     exports("Emit", function(eventName, payload)
-        return EventCore.EmitServer(eventName, payload)
+        return exportContext(EventCore.EmitServer(eventName, payload))
     end)
 
     exports("EmitClient", function(eventName, target, payload)
@@ -103,6 +113,51 @@ if exports then
 
     exports("BroadcastClient", function(eventName, payload)
         return EventCore.BroadcastClient(eventName, payload)
+    end)
+
+    local function trustedPersistenceCall(method, ...)
+        local caller = GetInvokingResource and GetInvokingResource() or nil
+        if not EventCore.Persistence or not EventCore.Persistence.IsTrustedCaller(caller) then
+            return nil, "persistence_caller_not_trusted"
+        end
+        return method(...)
+    end
+
+    exports("PersistEvent", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.Persist, ...)
+    end)
+    exports("GetPersistedEvent", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.Get, ...)
+    end)
+    exports("FindPersistedEvents", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.Find, ...)
+    end)
+    exports("PersistenceStatus", function()
+        return EventCore.Persistence.Status()
+    end)
+    exports("ExposeEvent", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.ExposeEvent, ...)
+    end)
+    exports("SavePlayerState", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.SavePlayerState, ...)
+    end)
+    exports("LoadPlayerState", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.LoadPlayerState, ...)
+    end)
+    exports("DeletePlayerState", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.DeletePlayerState, ...)
+    end)
+    exports("SaveInventoryState", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.SaveInventoryState, ...)
+    end)
+    exports("LoadInventoryState", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.LoadInventoryState, ...)
+    end)
+    exports("SaveOutfitCode", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.SaveOutfitCode, ...)
+    end)
+    exports("LoadOutfitCode", function(...)
+        return trustedPersistenceCall(EventCore.Persistence.LoadOutfitCode, ...)
     end)
 end
 
