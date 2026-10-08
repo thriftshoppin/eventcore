@@ -6,3 +6,4 @@ The API and network behavior are experimental and have not been verified in a li
 
 To send a client event, a trusted server resource must first allow that event name through EventCore. It can then register a server-side listener. Client events are associated with the authenticated player's server source.
 
+EventCore is released as All Rights Reserved. Permission is granted to download, install, and run this release on OPEN//77 servers through the OPEN//77 Workshop. Modification, redistribution, and derivative works are not permitted.
