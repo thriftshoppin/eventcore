@@ -4,6 +4,17 @@ EventCore is the server-side runtime and service hub for Open77 roleplay resourc
 
 Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. They publish versioned service descriptors and validated exports for RPCore and other consumers. EventCore is the common hub and persistence layer, not a replacement for each domain's rules.
 
+## 0.3.0-beta.2
+
+Adds EventCore's versioned client-state feed. Trusted server resources publish
+client-safe snapshots (or clear a channel) through EventCore; clients receive
+ordered `state:update` packets. EventCore transports these views but does not
+become the authoritative owner of character, health, needs, mission, or other
+gameplay state.
+
+See [`docs/rpcore-integration.md`](docs/rpcore-integration.md) for the feed
+contract and server/client integration example.
+
 ## 0.3.0-beta.1
 
 This release prepares that architecture with:
@@ -14,7 +25,7 @@ This release prepares that architecture with:
 - Existing event dispatch, explicit client-event allowlisting, selected server event notifications, and server-only SQL persistence.
 - Open77-correct asynchronous cross-resource examples. Function callbacks are not passed between isolated resource VMs.
 
-This is an experimental foundation, not the completed RPCore data feed. EventCore does not yet push live HUD updates, implement inventory/clothing/mission providers, replace Open77's scheduler/resource lifecycle, or automatically capture state owned by another resource. The implementation status and staged roadmap are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) and [`docs/RPCORE_PREPARATION_PLAN.md`](docs/RPCORE_PREPARATION_PLAN.md).
+This is an experimental foundation. EventCore transports versioned client-safe snapshots published by trusted resources, but does not implement inventory/clothing/mission providers, replace Open77's scheduler/resource lifecycle, or automatically capture state owned by another resource. The implementation status and staged roadmap are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) and [`docs/RPCORE_PREPARATION_PLAN.md`](docs/RPCORE_PREPARATION_PLAN.md).
 
 Release-by-release changes are listed in [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -48,7 +59,7 @@ Event history is a bounded asynchronous audit queue, not a write-ahead log. Auth
 
 ## Compatibility and release
 
-The `0.3.0-beta.1` archive is separate from the earlier `0.2.0-beta.1` release. The service directory requires an Open77 server build with server-to-server exports and resource-generation APIs. Verify compatibility on the actual server before enabling it for players.
+The `0.3.0-beta.2` archive is separate from the earlier `0.2.0-beta.1` release. The service directory requires an Open77 server build with server-to-server exports and resource-generation APIs. Verify compatibility on the actual server before enabling it for players.
 
 For legacy adapters, see [`docs/legacy-compatibility.md`](docs/legacy-compatibility.md). EventCore does not patch RED4ext, Open77 binaries, or third-party native plugins. The planned custom-clothing boundary and stable outfit-code rules are in [`docs/server-managed-clothing.md`](docs/server-managed-clothing.md).
 

@@ -1,6 +1,6 @@
 # RPCore integration contract
 
-This guide describes the EventCore `0.3.0-beta.1` foundation for RPCore. EventCore is the server-side runtime/service hub. RPCore consumes its safe APIs and renders the player-facing HUD. Inventory, appearance, missions, and other domain resources remain authoritative for their own rules and data.
+This guide describes the EventCore `0.3.0-beta.2` foundation for RPCore. EventCore is the server-side runtime/service hub and owns the client-state transport contract. RPCore consumes safe APIs and renders the player-facing HUD. Inventory, appearance, missions, and other domain resources remain authoritative for their own rules and data.
 
 Open77 gives each resource an isolated Lua VM. Cross-resource requests therefore use serializable values and named exports; Lua callbacks and internal tables do not cross that boundary. Use Open77's `Open77.exports.call` and await its promise from a managed server coroutine. See [Open77 cross-resource server exports](https://open2077.net/docs/server-exports).
 
@@ -12,6 +12,52 @@ Open77 gives each resource an isolated Lua VM. Cross-resource requests therefore
 | `eventcore.runtime` | `GetServiceCatalog()` | Active provider descriptors, including the provider resource name | Any server resource |
 | `eventcore.runtime` | `GetPlayerContext(playerId)` | Verified stable identity, display name, session ID, last known position, and routing bucket | Trusted server resources; initially `rpcore` |
 | `eventcore.runtime` | `GetPlayerObservers(playerId)` | Current native replication-scope viewers for proximity-aware presentation | Trusted server resources; initially `rpcore` |
+| `eventcore.runtime` | `PublishClientState(playerId, channel, schemaVersion, payload)` | Send a validated, client-safe snapshot through EventCore | Trusted server resources |
+| `eventcore.runtime` | `ClearClientState(playerId, channel, schemaVersion)` | Clear a presentation channel | Trusted server resources |
+
+## Client-state feed
+
+Gameplay resources own and validate gameplay state. A trusted presentation
+consumer such as RPCore converts it into a client-safe view, then publishes the
+view through EventCore. EventCore checks the caller and target player, detaches
+and bounds the payload, assigns an increasing per-player/channel sequence, and
+sends the `eventcore:net:state:update` packet. The client rejects stale sequence
+numbers and dispatches it on `EventCore.STATE_FEED_EVENT` (`state:update`).
+
+Packets contain `protocolVersion`, `epoch`, `publisher`, `channel`,
+`schemaVersion`, `sequence`, `visible`, and `state`. Epochs let the client
+accept fresh sequences after EventCore restarts. Use a stable resource-namespaced channel such as
+`rpcore.hud`; the publisher owns that channel's schema. Payloads are limited to
+2,048 table entries, 12 nested levels, 4,096 characters per string, and 64 KiB
+of combined string/key content.
+Functions, userdata, cycles, non-finite numbers, and unsupported keys are
+rejected. `visible=false` explicitly clears the channel with an empty state.
+
+Server publisher (from a managed server coroutine):
+
+```lua
+local pending, reason = Open77.exports.call("eventcore", "PublishClientState",
+    playerId, "rpcore.hud", 1, hudView)
+if not pending then return false, reason end
+return pending:await()
+```
+
+RPCore client listener:
+
+```lua
+EventCore.On(EventCore.STATE_FEED_EVENT, function(packet)
+    if packet.channel ~= "rpcore.hud" or packet.schemaVersion ~= 1 then return end
+    if packet.visible then
+        -- Render packet.state; it is presentation data, not gameplay authority.
+    else
+        -- Clear this HUD view.
+    end
+end)
+```
+
+The feed is transport, not a provider or source of truth. Resource join/restart
+replay, subscriptions, update cadence, and RPCore's current SIMNC compatibility
+reader still need integration and live-server verification.
 
 The player-context identity prefers the Open77 account `license` and falls back to the persistent installation `userId` on runtimes without `license`. The session `playerId` is for live addressing only. Position is Open77's latest replicated server snapshot and can be unavailable or slightly stale; gameplay decisions must revalidate conditions at the moment of action.
 
@@ -90,7 +136,7 @@ Provider services must validate every argument, use `GetInvokingResource()` for 
 
 ## What this release does not do yet
 
-- It does not push live HUD state to RPCore clients or define the final HUD payload/update cadence. RPCore's server/client transport and UI lifecycle need a separate stage.
+- It does not build HUD state from gameplay providers or replay cached state after a client/resource restart. RPCore must publish a validated view and manage its rendering lifecycle.
 - It does not include inventory, clothing, mission, economy, health/needs, or vehicle providers. Their owning resources must implement and register those contracts.
 - It does not provide a general task supervisor or replace Open77's resource lifecycle and scheduler.
 - It does not query EventCore SQL tables from RPCore. Durable writes remain explicit calls from the server resource that owns the authoritative state.
@@ -98,6 +144,6 @@ Provider services must validate every argument, use `GetInvokingResource()` for 
 
 ## Compatibility and rollout
 
-`0.3.0-beta.1` adds the server service directory and trusted context APIs. Cross-resource `On`/`Off` exports were removed because Open77's value codec does not transfer callbacks. The in-resource `EventCore.On` and `EventCore.Off` dispatcher remains available inside the EventCore VM; use a named provider export for request/response calls and Open77 events for data notifications. Rebuild consumers against this contract before using the new beta.
+`0.3.0-beta.2` adds the client-state feed without changing `API_VERSION` (1). Cross-resource `On`/`Off` exports remain unavailable because Open77's value codec does not transfer callbacks. The in-resource `EventCore.On` and `EventCore.Off` dispatcher remains available inside each EventCore VM; use named exports for server request/response calls and `state:update` for this validated client presentation feed. Rebuild consumers against this beta before using it.
 
 The new cross-resource server API requires an Open77 server build that supports server exports, `GetInvokingResourceGeneration`, and `Open77.resource.generation`. The client runtime does not need an update for those server-side calls. Verify the actual server build before deployment.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.2
+
+- Added EventCore's versioned, trusted server-to-client state feed for presentation snapshots and explicit channel clears.
+- Added detached, bounded payload validation, server-assigned per-player/channel ordering, and client-side stale-packet rejection.
+- Added `PublishClientState` and `ClearClientState` to the runtime service catalog.
+- Declared the Open77 player-read permission used by trusted state-feed target validation and existing runtime context reads.
+- Documented RPCore integration; gameplay providers remain authoritative for their own state.
+
 ## 0.3.0-beta.1
 
 Prepares EventCore for RPCore as a consumer-facing service hub.

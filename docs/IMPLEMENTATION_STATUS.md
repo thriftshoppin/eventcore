@@ -1,4 +1,4 @@
-# EventCore 0.3.0-beta.1 checkpoint
+# EventCore 0.3.0-beta.2 checkpoint
 
 ## Implemented in this repository
 
@@ -8,6 +8,8 @@
 - Opt-in server event notifications for safe, JSON-compatible records.
 - Versioned server service directory: provider/resource identity and VM generation come from Open77's export invocation context; descriptors are serializable; stale provider generations are pruned.
 - Trusted read-only `GetPlayerContext` and `GetPlayerObservers` APIs for RPCore. Context returns the stable account/install identity, display name, current session ID, latest position snapshot, and routing bucket. Observer results are the current native replication-scope viewers.
+- Trusted EventCore client-state feed: `PublishClientState` and `ClearClientState` validate the caller, target, and bounded serializable payload; EventCore assigns channel sequence numbers and clients reject stale packets.
+- `state:update` client dispatch with protocol version, channel, schema version, visibility, sequence, and snapshot.
 - Cross-resource event `On`/`Off` callback exports removed because Open77 does not transfer Lua functions across resource VMs. `EventCore.On` / `Off` remain internal to the EventCore VM; exported `Emit` results are value-only.
 - `0.3.0-beta.1` resource/version API identifiers, updated README, RPCore integration guide, architecture plan, persistence guide, and updated clothing dependency contract.
 
@@ -22,9 +24,9 @@
 
 ## Still planned for RPCore readiness
 
-- A live client HUD snapshot/update channel, including RPCore WebUI integration and its lifecycle/visibility rules.
+- RPCore WebUI integration, cached snapshot replay/subscription lifecycle, and HUD visibility/update rules using the EventCore state feed.
 - Domain provider integrations for character, inventory, clothing/appearance, missions/objectives, health/needs, economy, and vehicles. Each provider owns validation and authoritative state.
-- Event-driven or scheduled state updates with defined cadence and backpressure. EventCore currently exposes context/scope queries, not a general task supervisor or push feed.
+- Event-driven or scheduled state updates with defined cadence and backpressure. EventCore transports published snapshots but does not observe authoritative domains or schedule their updates.
 - A concrete RPCore resource built against this contract.
 
 ## Boundaries
@@ -38,4 +40,4 @@
 
 ## Release preservation
 
-The `0.2.0-beta.1` archive remains a separate, unchanged artifact. This repository and the new archive target `0.3.0-beta.1`.
+The `0.2.0-beta.1` archive remains a separate, unchanged artifact. This repository and the new archive target `0.3.0-beta.2`.
