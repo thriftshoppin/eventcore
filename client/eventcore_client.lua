@@ -32,15 +32,20 @@ function EventCore.EmitServer(eventName, payload)
     return false
 end
 
+local function exportContext(context)
+    return {
+        name = context.name,
+        data = context.data,
+        source = context.source,
+        timestamp = context.timestamp,
+        cancelled = context.isCancelled(),
+        cancelReason = context.getCancelReason(),
+    }
+end
+
 if exports then
-    exports("On", function(eventName, callback, priority)
-        return EventCore.On(eventName, callback, priority)
-    end)
-    exports("Off", function(eventName, id)
-        return EventCore.Off(eventName, id)
-    end)
     exports("Emit", function(eventName, payload)
-        return EventCore.EmitClient(eventName, payload)
+        return exportContext(EventCore.EmitClient(eventName, payload))
     end)
     exports("EmitServer", function(eventName, payload)
         return EventCore.EmitServer(eventName, payload)

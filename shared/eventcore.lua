@@ -4,6 +4,8 @@
 ]]
 
 EventCore = EventCore or {}
+EventCore.VERSION = "0.3.0-beta.1"
+EventCore.API_VERSION = 1
 
 -- Priority Levels
 EventCore.PRIORITY = {
