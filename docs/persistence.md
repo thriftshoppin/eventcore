@@ -122,6 +122,10 @@ Event history exports:
 
 All payload values must encode as JSON and fit within 48 KiB. Query values are parameterized. The only player inventory/outfit rows EventCore can guarantee are those written through these server APIs; each consuming resource owns load timing, validation, and application to its game system.
 
+## Native game map data
+
+EventCore persists map definitions only: a trusted consumer such as RPCore stores validated pin IDs, labels, native sprite identifiers, and world coordinates in its own whitelisted storage partition. RPCore then asks Open77 to create resource-owned native blips, which Cyberpunk renders on its built-in City Map and minimap. EventCore does not store map tiles, draw a replacement map, or control minimap placement. Each map consumer must declare an EventCore dependency and be listed in `server/whitelist.lua`; the consumer remains responsible for validating admin actions and pin data before writes.
+
 ## Tables
 
 - `eventcore_events` is append-only event history. `source_id` is a session number for audit context (`0` indicates a server-originated event), not a durable player key. `occurred_ms` is the process-monotonic event timestamp (`0` if unavailable); `created_at` is the SQL server's timestamp.

@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Documented EventCore's scoped-storage role in native game-map integrations: persist pin definitions while the game renders the map and blips.
+
 ## 0.6.5
 - Routed Escape close through Open77's pause-key event because the host consumes Escape before WebUI receives it.
 - Declared the local-event capability required to receive the host close event.
