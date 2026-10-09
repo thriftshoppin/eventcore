@@ -1,14 +1,14 @@
 # EventCore persistence
 
-EventCore 0.3.0-beta.1 includes the server-only persistence adapter introduced in 0.2.0-beta.1 and adds a versioned service directory and trusted player-context APIs. It uses Open77's built-in MySQL/MariaDB bridge; it does not connect directly to SQL from client scripts and never puts database credentials in the resource.
+EventCore 0.5.0 includes the server-only SQL bridge and a structured storage gateway. A consumer gets only its own resource namespace and per-player records; it never sends SQL, table names, or an owner name. EventCore owns the database connection and keeps `database.access`; consumers call validated EventCore exports. The older compatibility persistence APIs remain available to the existing trusted RPCore integration and should not be used as a shared mod-storage interface.
 
 ## Server setup
 
 1. Install MySQL or MariaDB and create a dedicated account for the server. Grant that account only the database permissions Open77 documents for the database EventCore will use.
 2. In the `server.jsonc` used to launch the server, enable `database.enabled` and configure `connectionStringEnvironmentVariable` (default: `OP77_DATABASE_CONNECTION`). Keep `connectionString` empty.
 3. Set `OP77_DATABASE_CONNECTION` in the dedicated server process environment to a MySqlConnector connection string. Do not put the password in this repository, in `open77.lua`, or in client files.
-4. Restart the dedicated server, then approve EventCore's `database.access` permission in Warden. On startup, EventCore creates the two tables shown in [`schema.sql`](schema.sql).
-5. Add each trusted server resource that will call EventCore persistence exports to the `trustedResources` table near the top of `server/persistence.lua` (the initial entry is `rpcore`). Restart EventCore after changing this list.
+4. Restart the dedicated server, then approve EventCore's `database.access` permission in Warden. On startup, EventCore creates the persistence tables shown in [`schema.sql`](schema.sql).
+5. Keep `database.access` on EventCore only. To approve a structured-storage consumer, install its resource folder, have its `open77.lua` declare `dependency "eventcore >=0.5.0"`, and add its exact resource name to `EventCore.Whitelist` in `server/whitelist.lua`. The manifest dependency is visible and ensures load order; this reviewed Lua list is the authorization gate. See [`examples/whitelist.lua`](../examples/whitelist.lua) for the template. Restart EventCore after changing the list.
 
 Open77's database bridge is disabled by default, supports MySQL/MariaDB, and exposes parameterized asynchronous queries to server scripts with `database.access`. Its `.await` methods must run from a host-managed coroutine. See [Open77 SQL setup](https://open2077.net/docs/database).
 
@@ -22,7 +22,48 @@ EventCore can store inventory snapshots, outfit codes, character preferences, mi
 
 ## Server API
 
-All persistence exports below may wait on SQL. Call them from a server-managed coroutine using `Open77.exports.call` and `promise:await()`. Handle both dispatch failures and the method's `nil, reason` / `false, reason` result. Only trusted resources listed in `trustedResources` can call persistence exports. Open77 does not pass Lua callbacks or functions between resources; use the serializable APIs shown here.
+All persistence exports below may wait on SQL. Call them from a server-managed coroutine using `Open77.exports.call` and `promise:await()`. Handle both dispatch failures and the method's `nil, reason` / `false, reason` result. Legacy compatibility exports use `trustedResources`; the isolated structured storage API has its separate `EventCore.Whitelist` allowlist plus the manifest-dependency check. Open77 supplies the real caller resource from the export context, so consumers cannot pass a different resource name. Open77 does not pass Lua callbacks or functions between resources; use the serializable APIs shown here.
+
+## Isolated storage API (v1)
+
+This is the default persistence path for new mods when no domain service owns the data. If a clothing, vehicle, inventory, or other authoritative resource already owns a domain, call that resource's validated API directly. EventCore is the cross-mod framework and compatibility fallback; it does not merge separate mod inventories. Shared basics such as outfit bundles and owned-vehicle records can become EventCore-owned services with defined contracts, while each add-on keeps its own records separate.
+
+The `EventCore.Whitelist` allowlist is per server resource, not per player or client. Every row includes the resource identity captured by `GetInvokingResource()`. A mod cannot specify another owner, read across resource namespaces, or choose a database/table/query. EventCore's SQL statements are fixed in code and values are bound parameters. `StoragePutPlayer` resolves a current player ID to a stable account identity, and the SQL key also includes the calling resource and collection.
+
+Example consumer manifest:
+
+```lua
+resource "my_clothing_mod"
+version "1.0.0"
+dependency "eventcore >=0.5.0"
+server_script "server/main.lua"
+```
+
+Add `my_clothing_mod = true` to `EventCore.Whitelist` in `server/whitelist.lua` only after installing and reviewing the resource folder. Do not grant it `database.access`. A manifest dependency alone is not authorization, and an allowlist entry without the dependency is denied.
+
+```lua
+local function eventCoreCall(method, ...)
+    local pending, dispatchError = Open77.exports.call("eventcore", method, ...)
+    if not pending then return nil, dispatchError end
+    return pending:await()
+end
+
+CreateThread(function()
+    local ok, reason = eventCoreCall("StoragePutPlayer", playerId,
+        "outfits", "streetwear-01", { code = "...", version = 1 })
+    if not ok then print("outfit save failed: " .. tostring(reason)) end
+
+    local outfit, loadReason = eventCoreCall("StorageGetPlayer", playerId,
+        "outfits", "streetwear-01")
+    if not outfit and loadReason ~= "not_found" then
+        print("outfit load failed: " .. tostring(loadReason))
+    end
+end)
+```
+
+Exports are `StorageApiVersion`, `StoragePut/Get/Delete/List`, their `Storage*Player` variants, and `StorageTransaction`. Lists use a stable key cursor and accept limits from 1 to 100. Each JSON value and the aggregate transaction payload are capped at 48 KiB; a transaction accepts at most 32 operations. Transactions support only `put` and `delete` against the calling resource's own namespace. Successful changes emit `eventcore.storage.write` audit events without recording keys or values. `PersistenceStatus` reports readiness and configured storage-consumer count.
+
+The current per-player key is account identity (`license`, or the compatible runtime's `userId` fallback), not a character ID. When EventCore gains a character service, character-scoped records should use that service's stable character key through a typed domain API.
 
 ```lua
 -- From an authorized server resource, inside CreateThread or another managed coroutine.
@@ -68,19 +109,21 @@ All payload values must encode as JSON and fit within 48 KiB. Query values are p
 ## Tables
 
 - `eventcore_events` is append-only event history. `source_id` is a session number for audit context (`0` indicates a server-originated event), not a durable player key. `occurred_ms` is the process-monotonic event timestamp (`0` if unavailable); `created_at` is the SQL server's timestamp.
-- `eventcore_player_state` holds one latest JSON value for each `(identity_type, identity_id, namespace, state_key)` and increments `revision` on replacement. It supports snapshots such as inventory arrays and outfit-code strings. It is not an item transaction ledger.
+- `eventcore_player_state` is the legacy compatibility table keyed by `(identity_type, identity_id, namespace, state_key)`. It does not have a resource-owner column; new resources must use the isolated storage API instead.
+- `eventcore_resource_state` holds shared resource-owned records keyed by `(resource_name, collection, state_key)`.
+- `eventcore_resource_player_state` holds per-player records keyed by resource, stable player identity, collection, and state key.
 
 The database account should be restricted to EventCore's database. Preserve regular SQL backups; copying the resource folder does not back up this state.
 
 ## Integration points
 
-1. The manifest loads `server/persistence.lua` after the shared event bus and grants `database.access`; the module does not load on clients.
+1. The manifest loads `server/whitelist.lua` before `server/persistence.lua`; EventCore alone requests `database.access`, and neither module loads on clients.
 2. The adapter wraps `EventCore.DispatchLocal` server-side and queues the resulting context after existing in-memory listeners finish.
-3. Its `MySQL.ready` callback creates both tables, then starts the background queue writer.
+3. Its `MySQL.ready` callback creates the four tables, then starts the background queue writer.
 4. Other server resources use the guarded EventCore exports to save/load player snapshots. The resource that owns each gameplay state must invoke the API at its authoritative mutation and restoration points.
 
 ## Implemented vs. needs runtime verification
 
-Implemented in this repository: SQL schema creation, event-history queue, durable player-state snapshot API, stable identity resolution, server-only credentials/permission path, trusted-resource export gate, bounded reads/writes, and this integration guide.
+Implemented in this repository: SQL schema creation, event-history queue, durable player-state snapshot API, stable identity resolution, server-only credentials/permission path, trusted-resource export gate, caller-isolated structured storage with bounded atomic batches, and this integration guide.
 
 Needs in-game/server verification: Warden permission approval, the actual server's MariaDB/MySQL compatibility and grants, persistence across a server restart, and end-to-end inventory/outfit save/restore after the owning gameplay resources integrate these calls. EventCore does not claim to hook every third-party inventory or wardrobe system automatically.

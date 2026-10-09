@@ -156,10 +156,12 @@ function EventCore.Services.List()
                 "BroadcastClient", "PersistEvent", "GetPersistedEvent", "FindPersistedEvents",
                 "PersistenceStatus", "ExposeEvent", "SavePlayerState", "LoadPlayerState",
                 "DeletePlayerState", "SaveInventoryState", "LoadInventoryState", "SaveOutfitCode",
-                "LoadOutfitCode",
+                "LoadOutfitCode", "StorageApiVersion", "StoragePut", "StorageGet", "StorageDelete",
+                "StorageList", "StoragePutPlayer", "StorageGetPlayer", "StorageDeletePlayer",
+                "StorageListPlayer", "StorageTransaction",
             },
             events = {},
-            description = "Runtime capabilities and trusted player/scope context.",
+            description = "Runtime services, trusted player/scope context, and caller-scoped persistence fallback.",
         },
     }
     for _, entry in pairs(services) do result[#result + 1] = descriptorCopy(entry) end
@@ -178,7 +180,7 @@ function EventCore.GetRuntimeInfo()
     return {
         version = EventCore.VERSION,
         apiVersion = EventCore.API_VERSION,
-        capabilities = { "events", "service_catalog", "player_context", "player_scope", "persistence", "client_state_feed_v1", "acl_role_read", "admin_console_v1" },
+        capabilities = { "events", "service_catalog", "player_context", "player_scope", "persistence", "storage_api_v1", "client_state_feed_v1", "acl_role_read", "admin_console_v1" },
         services = EventCore.Services.List(),
     }
 end

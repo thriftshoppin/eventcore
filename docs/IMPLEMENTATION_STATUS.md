@@ -1,8 +1,10 @@
-# EventCore 0.4.0 checkpoint
+# EventCore 0.5.0 checkpoint
 
 ## Implemented in this repository
 
 - Server-only Open77 MySQL/MariaDB persistence for event history and explicit JSON player-state records.
+- Structured SQL gateway for reviewed consumers: explicit per-resource approvals in `server/whitelist.lua`, a declared EventCore manifest dependency, caller-derived data ownership, isolated resource/player partitions, and no consumer SQL access.
+- Bounded storage operations, keyset listing, atomic batches, audit events, and automatic schema creation for isolated storage tables.
 - Bounded, parameterized reads/writes; trusted-resource guards; explicit inventory/outfit convenience APIs.
 - In-memory priority event dispatcher and controlled client-to-server relay for explicitly allowed event names.
 - Opt-in server event notifications for safe, JSON-compatible records.
@@ -32,6 +34,7 @@
 - Domain provider integrations for character, inventory, clothing/appearance, missions/objectives, health/needs, economy, and vehicles. Each provider owns validation and authoritative state.
 - Event-driven or scheduled state updates with defined cadence and backpressure. EventCore transports published snapshots but does not observe authoritative domains or schedule their updates.
 - A concrete RPCore resource built against this contract.
+- Typed EventCore-owned foundational RP services for character profiles, outfit/clothing bundles, and owned vehicles; the storage gateway is a persistence primitive, not a substitute for those domain contracts.
 
 ## Boundaries
 
@@ -44,4 +47,4 @@
 
 ## Release preservation
 
-The `0.2.0-beta.1` archive remains a separate, unchanged artifact. This repository and the new archive target `0.3.0-beta.3`.
+The repository version is 0.5.0. No remote release or deployment has been made.

@@ -19,7 +19,15 @@ the command implementations remain in their owning resources until migrated.
 See [`docs/admin-console.md`](docs/admin-console.md) for commands, panel actions,
 and the authorization flow.
 
-Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. They publish versioned service descriptors and validated exports for RPCore and other consumers. EventCore is the common hub and persistence layer, not a replacement for each domain's rules.
+Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. Related foundational RP services such as outfits/clothing bundles and owned vehicles can live behind shared EventCore contracts, while add-on resources publish versioned services and work directly with those owners when appropriate. EventCore is the compatibility and persistence fallback when no domain service fits. Its storage API gives each explicitly trusted resource a separate SQL-backed namespace; a mod cannot supply SQL, choose another resource's namespace, or directly access the database. This keeps mod-owned records separate instead of combining every mod's inventory or data into one list.
+
+## 0.5.0
+
+Adds a structured persistence gateway for trusted resources, with resource-private
+and per-player storage, bounded atomic batches, and server-derived ownership.
+Consumers use EventCore exports instead of database credentials or raw SQL.
+See [`docs/persistence.md`](docs/persistence.md) for trust configuration and
+the storage contract.
 
 ## 0.4.0
 

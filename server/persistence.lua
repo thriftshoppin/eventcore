@@ -10,12 +10,19 @@ local TABLE_NAME = "eventcore_events"
 local MAX_PAYLOAD_BYTES = 48 * 1024
 local MAX_QUEUE_SIZE = 1000
 local MAX_READ_LIMIT = 100
+local MAX_STORAGE_BATCH = 32
+local MAX_STORAGE_BATCH_BYTES = 48 * 1024
+local STORAGE_API_VERSION = 1
 
 -- Only these server resources may call the persistence exports. Add trusted
 -- server-side consumers here when they are installed on the same server.
 local trustedResources = {
     rpcore = true
 }
+
+-- Storage is opt-in by resource in server/whitelist.lua. The caller's
+-- resource name comes from GetInvokingResource and becomes the ownership key.
+local storageResources = EventCore.Whitelist or {}
 
 local state = "waiting_for_database"
 local writeQueue = {}
@@ -54,6 +61,66 @@ CREATE TABLE IF NOT EXISTS eventcore_player_state (
     KEY idx_eventcore_state_updated (updated_at),
     CONSTRAINT chk_eventcore_state_json CHECK (JSON_VALID(state_json))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+]]
+
+local CREATE_RESOURCE_STATE_SCHEMA = [[
+CREATE TABLE IF NOT EXISTS eventcore_resource_state (
+    resource_name VARCHAR(64) NOT NULL,
+    collection VARCHAR(64) NOT NULL,
+    state_key VARCHAR(128) NOT NULL,
+    state_json LONGTEXT NOT NULL,
+    revision BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (resource_name, collection, state_key),
+    KEY idx_eventcore_resource_state_updated (resource_name, updated_at),
+    CONSTRAINT chk_eventcore_resource_state_json CHECK (JSON_VALID(state_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+]]
+
+local CREATE_RESOURCE_PLAYER_STATE_SCHEMA = [[
+CREATE TABLE IF NOT EXISTS eventcore_resource_player_state (
+    resource_name VARCHAR(64) NOT NULL,
+    identity_type VARCHAR(16) NOT NULL,
+    identity_id VARCHAR(64) NOT NULL,
+    collection VARCHAR(64) NOT NULL,
+    state_key VARCHAR(128) NOT NULL,
+    state_json LONGTEXT NOT NULL,
+    revision BIGINT UNSIGNED NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (resource_name, identity_type, identity_id, collection, state_key),
+    KEY idx_eventcore_resource_player_updated (resource_name, updated_at),
+    CONSTRAINT chk_eventcore_resource_player_state_json CHECK (JSON_VALID(state_json))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+]]
+
+local UPSERT_RESOURCE_STATE = [[
+INSERT INTO eventcore_resource_state
+    (resource_name, collection, state_key, state_json, revision)
+VALUES (?, ?, ?, ?, 1)
+ON DUPLICATE KEY UPDATE
+    state_json = VALUES(state_json),
+    revision = revision + 1,
+    updated_at = CURRENT_TIMESTAMP(3)
+]]
+
+local DELETE_RESOURCE_STATE = [[
+DELETE FROM eventcore_resource_state
+WHERE resource_name = ? AND collection = ? AND state_key = ?
+]]
+
+local UPSERT_RESOURCE_PLAYER_STATE = [[
+INSERT INTO eventcore_resource_player_state
+    (resource_name, identity_type, identity_id, collection, state_key, state_json, revision)
+VALUES (?, ?, ?, ?, ?, ?, 1)
+ON DUPLICATE KEY UPDATE
+    state_json = VALUES(state_json),
+    revision = revision + 1,
+    updated_at = CURRENT_TIMESTAMP(3)
+]]
+
+local DELETE_RESOURCE_PLAYER_STATE = [[
+DELETE FROM eventcore_resource_player_state
+WHERE resource_name = ? AND identity_type = ? AND identity_id = ? AND collection = ? AND state_key = ?
 ]]
 
 local function encodeData(data)
@@ -137,7 +204,13 @@ function EventCore.Persistence.Status()
         state = state,
         queuedWrites = #writeQueue,
         droppedQueuedWrites = droppedQueuedWrites,
-        table = TABLE_NAME
+        table = TABLE_NAME,
+        storageApiVersion = STORAGE_API_VERSION,
+        storageConsumers = (function()
+            local count = 0
+            for _ in pairs(storageResources) do count = count + 1 end
+            return count
+        end)(),
     }
 end
 
@@ -258,6 +331,332 @@ local function resolvePlayerIdentity(playerId)
         return "userId", userId
     end
     return nil, nil, "persistent_player_identity_unavailable"
+end
+
+local function validateStorageAddress(collection, stateKey)
+    if type(collection) ~= "string" or #collection < 1 or #collection > 64
+        or not collection:match("^[%w][%w_.%-]*$") then
+        return false, "invalid_collection"
+    end
+    if type(stateKey) ~= "string" or #stateKey < 1 or #stateKey > 128 then
+        return false, "invalid_state_key"
+    end
+    return true
+end
+
+local function decodeStorageRow(row)
+    if type(row) ~= "table" or type(row.state_json) ~= "string" then
+        return nil, "invalid_stored_state"
+    end
+    local ok, value, reason = pcall(Open77.json.decode, row.state_json)
+    if not ok or value == nil then return nil, "invalid_stored_json: " .. tostring(reason or value) end
+    return value, nil, { revision = tonumber(row.revision) or 1, updatedAt = row.updated_at }
+end
+
+local function decodeStorageRows(rows)
+    local result = {}
+    for _, row in ipairs(rows or {}) do
+        local value, reason, metadata = decodeStorageRow(row)
+        if reason then return nil, reason end
+        result[#result + 1] = {
+            key = row.state_key,
+            value = value,
+            revision = metadata.revision,
+            updatedAt = metadata.updatedAt,
+        }
+    end
+    return result
+end
+
+local function auditStorageWrite(resourceName, operation, scope, collection, count)
+    if type(EventCore.DispatchLocal) ~= "function" then return end
+    pcall(EventCore.DispatchLocal, "eventcore.storage.write", {
+        resource = resourceName,
+        operation = operation,
+        scope = scope,
+        collection = collection,
+        count = count or 1,
+    }, 0)
+end
+
+local function storageReady()
+    return state == "ready", state == "ready" and nil or ("persistence_" .. state)
+end
+
+local function validateResourceName(resourceName)
+    if type(resourceName) ~= "string" or #resourceName < 1 or #resourceName > 64 then
+        return false
+    end
+    if storageResources[resourceName] ~= true then return false end
+
+    -- Storage consumers must also declare EventCore as a manifest dependency.
+    -- This makes the integration visible in open77.lua and ensures load order;
+    -- the explicit allowlist above remains the actual authorization gate.
+    if not (Open77 and Open77.resource and type(Open77.resource.metadata) == "function") then
+        return false
+    end
+    local ok, dependencies = pcall(Open77.resource.metadata, resourceName, "dependencies")
+    if not ok or type(dependencies) ~= "table" then return false end
+    for _, dependency in pairs(dependencies) do
+        if type(dependency) == "string" then
+            local dependencyName = dependency:match("^%s*([^%s]+)")
+            if dependencyName == "eventcore" then return true end
+        elseif type(dependency) == "table" and dependency.name == "eventcore" then
+            return true
+        end
+    end
+    return false
+end
+
+local function playerStorageAddress(resourceName, playerId, collection, stateKey)
+    if not validateResourceName(resourceName) then return nil, nil, "storage_caller_not_trusted" end
+    local addressOk, addressReason = validateStorageAddress(collection, stateKey)
+    if not addressOk then return nil, nil, addressReason end
+    local identityType, identityId, identityReason = resolvePlayerIdentity(playerId)
+    if not identityType then return nil, nil, identityReason end
+    return identityType, identityId
+end
+
+--- Store a JSON document in the calling resource's private namespace.
+function EventCore.Persistence.StoragePut(resourceName, collection, stateKey, value)
+    if not validateResourceName(resourceName) then return false, "storage_caller_not_trusted" end
+    local ready, unavailable = storageReady()
+    if not ready then return false, unavailable end
+    local addressOk, addressReason = validateStorageAddress(collection, stateKey)
+    if not addressOk then return false, addressReason end
+    local encoded, encodeReason = encodeData(value)
+    if not encoded then return false, encodeReason end
+
+    local ok, result = pcall(function()
+        return MySQL.update.await(UPSERT_RESOURCE_STATE,
+            { resourceName, collection, stateKey, encoded })
+    end)
+    if not ok then return false, tostring(result) end
+    auditStorageWrite(resourceName, "put", "resource", collection)
+    return true
+end
+
+function EventCore.Persistence.StorageGet(resourceName, collection, stateKey)
+    if not validateResourceName(resourceName) then return nil, "storage_caller_not_trusted" end
+    local ready, unavailable = storageReady()
+    if not ready then return nil, unavailable end
+    local addressOk, addressReason = validateStorageAddress(collection, stateKey)
+    if not addressOk then return nil, addressReason end
+
+    local ok, row = pcall(function()
+        return MySQL.single.await([[
+            SELECT state_json, revision, updated_at
+            FROM eventcore_resource_state
+            WHERE resource_name = ? AND collection = ? AND state_key = ?
+            LIMIT 1
+        ]], { resourceName, collection, stateKey })
+    end)
+    if not ok then return nil, tostring(row) end
+    if not row then return nil, "not_found" end
+    return decodeStorageRow(row)
+end
+
+function EventCore.Persistence.StorageDelete(resourceName, collection, stateKey)
+    if not validateResourceName(resourceName) then return false, "storage_caller_not_trusted" end
+    local ready, unavailable = storageReady()
+    if not ready then return false, unavailable end
+    local addressOk, addressReason = validateStorageAddress(collection, stateKey)
+    if not addressOk then return false, addressReason end
+
+    local ok, result = pcall(function()
+        return MySQL.update.await(DELETE_RESOURCE_STATE,
+            { resourceName, collection, stateKey })
+    end)
+    if not ok then return false, tostring(result) end
+    local deleted = (tonumber(result) or 0) > 0
+    if deleted then auditStorageWrite(resourceName, "delete", "resource", collection) end
+    return deleted
+end
+
+function EventCore.Persistence.StorageList(resourceName, collection, afterKey, limit)
+    if not validateResourceName(resourceName) then return nil, "storage_caller_not_trusted" end
+    local ready, unavailable = storageReady()
+    if not ready then return nil, unavailable end
+    if type(collection) ~= "string" or #collection < 1 or #collection > 64
+        or not collection:match("^[%w][%w_.%-]*$") then
+        return nil, "invalid_collection"
+    end
+    if afterKey ~= nil and (type(afterKey) ~= "string" or #afterKey > 128) then
+        return nil, "invalid_cursor"
+    end
+    limit = tonumber(limit) or 50
+    if limit % 1 ~= 0 or limit < 1 or limit > MAX_READ_LIMIT then return nil, "invalid_limit" end
+
+    local ok, rows = pcall(function()
+        return MySQL.query.await([[
+            SELECT state_key, state_json, revision, updated_at
+            FROM eventcore_resource_state
+            WHERE resource_name = ? AND collection = ? AND state_key > ?
+            ORDER BY state_key ASC LIMIT ?
+        ]], { resourceName, collection, afterKey or "", limit })
+    end)
+    if not ok then return nil, tostring(rows) end
+    return decodeStorageRows(rows)
+end
+
+function EventCore.Persistence.StoragePutPlayer(resourceName, playerId, collection, stateKey, value)
+    local identityType, identityId, addressReason = playerStorageAddress(resourceName, playerId, collection, stateKey)
+    if not identityType then return false, addressReason end
+    local ready, unavailable = storageReady()
+    if not ready then return false, unavailable end
+    local encoded, encodeReason = encodeData(value)
+    if not encoded then return false, encodeReason end
+
+    local ok, result = pcall(function()
+        return MySQL.update.await(UPSERT_RESOURCE_PLAYER_STATE,
+            { resourceName, identityType, identityId, collection, stateKey, encoded })
+    end)
+    if not ok then return false, tostring(result) end
+    auditStorageWrite(resourceName, "put", "player", collection)
+    return true
+end
+
+function EventCore.Persistence.StorageGetPlayer(resourceName, playerId, collection, stateKey)
+    local identityType, identityId, addressReason = playerStorageAddress(resourceName, playerId, collection, stateKey)
+    if not identityType then return nil, addressReason end
+    local ready, unavailable = storageReady()
+    if not ready then return nil, unavailable end
+
+    local ok, row = pcall(function()
+        return MySQL.single.await([[
+            SELECT state_json, revision, updated_at
+            FROM eventcore_resource_player_state
+            WHERE resource_name = ? AND identity_type = ? AND identity_id = ?
+              AND collection = ? AND state_key = ?
+            LIMIT 1
+        ]], { resourceName, identityType, identityId, collection, stateKey })
+    end)
+    if not ok then return nil, tostring(row) end
+    if not row then return nil, "not_found" end
+    return decodeStorageRow(row)
+end
+
+function EventCore.Persistence.StorageDeletePlayer(resourceName, playerId, collection, stateKey)
+    local identityType, identityId, addressReason = playerStorageAddress(resourceName, playerId, collection, stateKey)
+    if not identityType then return false, addressReason end
+    local ready, unavailable = storageReady()
+    if not ready then return false, unavailable end
+
+    local ok, result = pcall(function()
+        return MySQL.update.await(DELETE_RESOURCE_PLAYER_STATE,
+            { resourceName, identityType, identityId, collection, stateKey })
+    end)
+    if not ok then return false, tostring(result) end
+    local deleted = (tonumber(result) or 0) > 0
+    if deleted then auditStorageWrite(resourceName, "delete", "player", collection) end
+    return deleted
+end
+
+function EventCore.Persistence.StorageListPlayer(resourceName, playerId, collection, afterKey, limit)
+    if not validateResourceName(resourceName) then return nil, "storage_caller_not_trusted" end
+    if type(collection) ~= "string" or #collection < 1 or #collection > 64
+        or not collection:match("^[%w][%w_.%-]*$") then
+        return nil, "invalid_collection"
+    end
+    if afterKey ~= nil and (type(afterKey) ~= "string" or #afterKey > 128) then
+        return nil, "invalid_cursor"
+    end
+    limit = tonumber(limit) or 50
+    if limit % 1 ~= 0 or limit < 1 or limit > MAX_READ_LIMIT then return nil, "invalid_limit" end
+    local identityType, identityId, identityReason = resolvePlayerIdentity(playerId)
+    if not identityType then return nil, identityReason end
+    local ready, unavailable = storageReady()
+    if not ready then return nil, unavailable end
+
+    local ok, rows = pcall(function()
+        return MySQL.query.await([[
+            SELECT state_key, state_json, revision, updated_at
+            FROM eventcore_resource_player_state
+            WHERE resource_name = ? AND identity_type = ? AND identity_id = ?
+              AND collection = ? AND state_key > ?
+            ORDER BY state_key ASC LIMIT ?
+        ]], { resourceName, identityType, identityId, collection, afterKey or "", limit })
+    end)
+    if not ok then return nil, tostring(rows) end
+    return decodeStorageRows(rows)
+end
+
+--- Apply a bounded batch of storage mutations as one SQL transaction.
+--- The caller's resource scope is attached to every statement by this module.
+function EventCore.Persistence.StorageTransaction(resourceName, operations)
+    if not validateResourceName(resourceName) then return false, "storage_caller_not_trusted" end
+    local ready, unavailable = storageReady()
+    if not ready then return false, unavailable end
+    if type(operations) ~= "table" or #operations < 1 or #operations > MAX_STORAGE_BATCH then
+        return false, "invalid_operation_count"
+    end
+
+    local statements, totalBytes, collectionForAudit = {}, 0, "multiple"
+    for index, operation in ipairs(operations) do
+        if type(operation) ~= "table" then return false, "invalid_operation_" .. index end
+        local kind = operation.op
+        local scope = operation.scope or "resource"
+        local collection, stateKey = operation.collection, operation.key
+        local addressOk, addressReason = validateStorageAddress(collection, stateKey)
+        if not addressOk then return false, "operation_" .. index .. "_" .. addressReason end
+
+        if kind == "put" then
+            local encoded, encodeReason = encodeData(operation.value)
+            if not encoded then return false, "operation_" .. index .. "_" .. encodeReason end
+            totalBytes = totalBytes + #encoded
+            if totalBytes > MAX_STORAGE_BATCH_BYTES then return false, "transaction_payload_too_large" end
+            if scope == "resource" then
+                statements[#statements + 1] = {
+                    query = UPSERT_RESOURCE_STATE,
+                    values = { resourceName, collection, stateKey, encoded },
+                }
+            elseif scope == "player" then
+                local identityType, identityId, identityReason = resolvePlayerIdentity(operation.playerId)
+                if not identityType then return false, "operation_" .. index .. "_" .. identityReason end
+                statements[#statements + 1] = {
+                    query = UPSERT_RESOURCE_PLAYER_STATE,
+                    values = { resourceName, identityType, identityId, collection, stateKey, encoded },
+                }
+            else
+                return false, "operation_" .. index .. "_invalid_scope"
+            end
+        elseif kind == "delete" then
+            if scope == "resource" then
+                statements[#statements + 1] = {
+                    query = DELETE_RESOURCE_STATE,
+                    values = { resourceName, collection, stateKey },
+                }
+            elseif scope == "player" then
+                local identityType, identityId, identityReason = resolvePlayerIdentity(operation.playerId)
+                if not identityType then return false, "operation_" .. index .. "_" .. identityReason end
+                statements[#statements + 1] = {
+                    query = DELETE_RESOURCE_PLAYER_STATE,
+                    values = { resourceName, identityType, identityId, collection, stateKey },
+                }
+            else
+                return false, "operation_" .. index .. "_invalid_scope"
+            end
+        else
+            return false, "operation_" .. index .. "_invalid_op"
+        end
+        if index == 1 then collectionForAudit = collection end
+    end
+
+    local ok, committed, reason = pcall(function()
+        return MySQL.transaction.await(statements)
+    end)
+    if not ok then return false, tostring(committed) end
+    if committed ~= true then return false, tostring(reason or "transaction_failed") end
+    auditStorageWrite(resourceName, "transaction", "mixed", collectionForAudit, #statements)
+    return true
+end
+
+function EventCore.Persistence.IsStorageCaller(resourceName)
+    return validateResourceName(resourceName)
+end
+
+function EventCore.Persistence.StorageApiVersion()
+    return STORAGE_API_VERSION
 end
 
 local function validateStateAddress(namespace, stateKey)
@@ -448,6 +847,8 @@ local function initializeDatabase()
         local ok, err = pcall(function()
             MySQL.update.await(CREATE_SCHEMA)
             MySQL.update.await(CREATE_PLAYER_STATE_SCHEMA)
+            MySQL.update.await(CREATE_RESOURCE_STATE_SCHEMA)
+            MySQL.update.await(CREATE_RESOURCE_PLAYER_STATE_SCHEMA)
         end)
         if not ok then
             state = "error"
@@ -456,7 +857,7 @@ local function initializeDatabase()
         end
         state = "ready"
         startWorker()
-        print("[EventCore] SQL persistence ready (event history and player state); queued dispatches will be flushed.")
+        print("[EventCore] SQL persistence ready (event history, player state, and isolated resource storage); queued dispatches will be flushed.")
     end)
 
     if not queued then

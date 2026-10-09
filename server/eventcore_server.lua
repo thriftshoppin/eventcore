@@ -123,6 +123,14 @@ if exports then
         return method(...)
     end
 
+    local function trustedStorageCall(method, ...)
+        local caller = GetInvokingResource and GetInvokingResource() or nil
+        if not EventCore.Persistence or not EventCore.Persistence.IsStorageCaller(caller) then
+            return nil, "storage_caller_not_trusted"
+        end
+        return method(caller, ...)
+    end
+
     exports("PersistEvent", function(...)
         return trustedPersistenceCall(EventCore.Persistence.Persist, ...)
     end)
@@ -158,6 +166,37 @@ if exports then
     end)
     exports("LoadOutfitCode", function(...)
         return trustedPersistenceCall(EventCore.Persistence.LoadOutfitCode, ...)
+    end)
+
+    -- Structured storage API. Callers never supply SQL or an owner name; the
+    -- resource identity is derived from the active server-export invocation.
+    exports("StorageApiVersion", function() return EventCore.Persistence.StorageApiVersion() end)
+    exports("StoragePut", function(...)
+        return trustedStorageCall(EventCore.Persistence.StoragePut, ...)
+    end)
+    exports("StorageGet", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageGet, ...)
+    end)
+    exports("StorageDelete", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageDelete, ...)
+    end)
+    exports("StorageList", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageList, ...)
+    end)
+    exports("StoragePutPlayer", function(...)
+        return trustedStorageCall(EventCore.Persistence.StoragePutPlayer, ...)
+    end)
+    exports("StorageGetPlayer", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageGetPlayer, ...)
+    end)
+    exports("StorageDeletePlayer", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageDeletePlayer, ...)
+    end)
+    exports("StorageListPlayer", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageListPlayer, ...)
+    end)
+    exports("StorageTransaction", function(...)
+        return trustedStorageCall(EventCore.Persistence.StorageTransaction, ...)
     end)
 end
 

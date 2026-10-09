@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- Added a server-only structured storage gateway so approved resources can persist their own data without direct SQL access.
+- Isolated resource and per-player records by the actual calling resource; callers cannot select another resource's namespace or submit SQL.
+- Added bounded key listing, payload limits, atomic batches, schema initialization, and write audit events.
+- Documented the service ownership boundary: use a domain resource's API when one exists and EventCore storage as the fallback. Shared RP services can build on EventCore contracts without combining mod inventories.
+
 ## 0.4.0
 
 - Added an EventCore-owned administrator console and Warden-gated text commands for opening it, listing global admins, inspecting player roles, and viewing runtime services and event handlers.
