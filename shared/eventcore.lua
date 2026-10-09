@@ -4,7 +4,7 @@
 ]]
 
 EventCore = EventCore or {}
-EventCore.VERSION = "0.6.4"
+EventCore.VERSION = "0.6.5"
 EventCore.API_VERSION = 1
 EventCore.STATE_FEED_EVENT = "state:update"
 

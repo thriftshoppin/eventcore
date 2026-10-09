@@ -1,5 +1,5 @@
 resource "eventcore"
-version "0.6.4"
+version "0.6.5"
 description "Experimental event, service, and persistence foundation for Open77 resources"
 author "EventCore Project"
 auto_start true
@@ -16,4 +16,4 @@ client_script "client/eventcore_client.lua"
 client_script "client/chat.lua"
 client_script "client/admin.lua"
 web_files { "web/admin/**", "web/chat/**" }
-permissions { "network.events", "input.actions", "database.access", "players.read", "acl.read" }
+permissions { "network.events", "local.events", "input.actions", "database.access", "players.read", "acl.read" }

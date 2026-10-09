@@ -40,6 +40,7 @@
   input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); } });
   if (window.Open77 && typeof Open77.on === 'function') {
     Open77.on('eventcore:chat:line', line => { add(line); showRecentLines(); });
+    Open77.on('eventcore:chat:focus', focusInput);
     Open77.on('eventcore:chat:history', data => { lines.length = 0; (data && Array.isArray(data.lines) ? data.lines : []).forEach(add); render(); });
     Open77.on('eventcore:chat:open', data => {
       const open = !!(data && data.open); body.classList.toggle('closed', !open);

@@ -1,4 +1,4 @@
-# EventCore 0.6.4 checkpoint
+# EventCore 0.6.5 checkpoint
 
 ## Implemented in this repository
 
@@ -12,6 +12,7 @@
 - Trusted read-only `GetPlayerContext` and `GetPlayerObservers` APIs for RPCore. Context returns the stable account/install identity, display name, current session ID, latest position snapshot, and routing bucket. Observer results are the current native replication-scope viewers.
 - Trusted read-only ACL role queries (`IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`) backed by Warden's effective Open77 ACL. EventCore does not assign roles.
 - EventCore-owned admin console entry point and text commands (`/eventcore.admin`, `/eventcore.admins`, `/eventcore.roles`, `/eventcore.services`, `/eventcore.events`) protected by Warden's reserved global admin/owner check.
+- EventCore chat now takes keyboard focus when opened with T, closes through Open77's Escape event, and accepts controller B as close.
 - The panel displays player roles, current services, and registered EventCore event handlers. Its quick actions are gated by the operator's individual `command.*` ACL grants and forwarded to Open77's restricted dispatcher for a second check.
 - Trusted EventCore client-state feed: `PublishClientState` and `ClearClientState` validate the caller, target, and bounded serializable payload; EventCore assigns channel sequence numbers and clients reject stale packets.
 - `state:update` client dispatch with protocol version, channel, schema version, visibility, sequence, and snapshot.
@@ -47,4 +48,4 @@
 
 ## Release preservation
 
-The local repository version is 0.6.4. Chat and map integration still need in-game verification on the target Open77 build. No remote release has been made.
+The local repository version is 0.6.5. Chat and map integration still need in-game verification on the target Open77 build. No remote release has been made.

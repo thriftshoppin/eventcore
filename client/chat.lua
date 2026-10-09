@@ -31,16 +31,30 @@ local function closeChat()
     if page and type(page.setFocus) == "function" then page:setFocus(false, false) end
 end
 
+local function acquireChatFocus()
+    if not page or not opened or type(page.setFocus) ~= "function" then return false end
+    local called, focused, reason = pcall(function() return page:setFocus(true, false) end)
+    if not called or focused ~= true then
+        print("[EventCore][chat] keyboard focus failed: " .. tostring(called and reason or focused))
+        return false
+    end
+    return true
+end
+
 local function openChat()
     if not page then return end
     opened = true
-    if type(page.setFocus) == "function" then
-        local called, focused, reason = pcall(function() return page:setFocus(true, false) end)
-        if not called or focused ~= true then
-            print("[EventCore][chat] keyboard focus failed: " .. tostring(called and reason or focused))
-        end
-    end
+    acquireChatFocus()
     post("eventcore:chat:open", { open = true, history = history })
+    -- CEF may process the open message after the native focus change. Repeat
+    -- both sides once the browser has had a frame to expose the input field.
+    CreateThread(function()
+        Wait(75)
+        if opened and page then
+            acquireChatFocus()
+            post("eventcore:chat:focus", {})
+        end
+    end)
 end
 
 local function words(line)
@@ -129,6 +143,9 @@ local function registerChatKey()
 end
 
 RegisterNetEvent("eventcore:net:chat:line", remember)
+-- Open77 consumes Escape in the game window before it reaches the focused
+-- WebUI, then republishes it as pauseKey. Close from that host event.
+AddEventHandler("open77:pauseKey", closeChat)
 RegisterNetEvent("open77:command:result", function(raw, accepted, message)
     if type(message) ~= "string" then return end
     local text = message
@@ -146,4 +163,24 @@ AddEventHandler("onClientResourceStop", function(name)
     if name ~= GetCurrentResourceName() then return end
     closeChat()
     if page then page:destroy(); page = nil end
+end)
+
+-- Escape is delivered through open77:pauseKey; poll only controller B as a
+-- close fallback while the chat surface owns keyboard focus.
+CreateThread(function()
+    local padBWasDown = false
+    while true do
+        if opened and Open77 and Open77.input and type(Open77.input.isDown) == "function" then
+            Wait(25)
+            local okPadB, padBDown = pcall(Open77.input.isDown, "padB")
+            padBDown = okPadB and padBDown == true
+            if padBDown and not padBWasDown then
+                closeChat()
+            end
+            padBWasDown = padBDown
+        else
+            Wait(100)
+            padBWasDown = false
+        end
+    end
 end)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.5
+- Routed Escape close through Open77's pause-key event because the host consumes Escape before WebUI receives it.
+- Declared the local-event capability required to receive the host close event.
+- Kept T chat focus active through the WebUI open/focus handshake so the first keystroke can go directly into the composer.
+- Added controller B as a close action while chat is open.
+
 ## 0.6.4
 - Replaced the boxed chat field with a transparent text overlay and green `eventcore:` prompt.
 - Focused the input on open and kept recent messages visible briefly after closing.
