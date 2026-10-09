@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.2
+- Reduced the chat panel width and tightened its input spacing and typography.
+
 ## 0.6.1
 - Kept the focused chat open instead of closing it on the menu-focus event it triggers.
 - Moved the chat panel to the top-left of the screen.

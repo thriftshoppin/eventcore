@@ -4,7 +4,7 @@ EventCore supplies a replaceable chat UI while Open77 remains responsible for co
 
 ## Install
 
-1. Install EventCore 0.6.1 or newer as a resource and keep it in the server's `resources.load` list.
+1. Install EventCore 0.6.2 or newer as a resource and keep it in the server's `resources.load` list.
 2. Remove `open77_chat` from `resources.load` after EventCore is installed. This stops the bundled chat UI and releases its T key binding. EventCore registers its own T binding.
 3. Keep other resources and their command registrations enabled. EventCore sends slash commands through Open77's authenticated command dispatcher, which still enforces each `command.<name>` ACL.
 4. Restart the server and check the EventCore startup logs. In game, press **T** to open chat. A normal message is sent as chat; `/command arguments` runs a registered local or server command.

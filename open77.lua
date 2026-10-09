@@ -1,5 +1,5 @@
 resource "eventcore"
-version "0.6.1"
+version "0.6.2"
 description "Experimental event, service, and persistence foundation for Open77 resources"
 author "EventCore Project"
 auto_start true
