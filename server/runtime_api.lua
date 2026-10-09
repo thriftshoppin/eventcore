@@ -149,6 +149,7 @@ function EventCore.Services.List()
             apiVersion = EventCore.API_VERSION,
             methods = {
                 "GetRuntimeInfo", "GetServiceCatalog", "GetPlayerContext", "GetPlayerObservers",
+                "IsAdmin", "GetPlayerRoles", "GetOnlineAdmins",
                 "RegisterService", "UnregisterService", "AllowClientEvent", "Emit", "EmitClient",
                 "PublishClientState", "ClearClientState",
                 "BroadcastClient", "PersistEvent", "GetPersistedEvent", "FindPersistedEvents",
@@ -176,7 +177,7 @@ function EventCore.GetRuntimeInfo()
     return {
         version = EventCore.VERSION,
         apiVersion = EventCore.API_VERSION,
-        capabilities = { "events", "service_catalog", "player_context", "player_scope", "persistence", "client_state_feed_v1" },
+        capabilities = { "events", "service_catalog", "player_context", "player_scope", "persistence", "client_state_feed_v1", "acl_role_read" },
         services = EventCore.Services.List(),
     }
 end

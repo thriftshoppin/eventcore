@@ -1,6 +1,6 @@
 # RPCore integration contract
 
-This guide describes the EventCore `0.3.0-beta.2` foundation for RPCore. EventCore is the server-side runtime/service hub and owns the client-state transport contract. RPCore consumes safe APIs and renders the player-facing HUD. Inventory, appearance, missions, and other domain resources remain authoritative for their own rules and data.
+This guide describes the EventCore `0.3.1` foundation for RPCore. EventCore is the server-side runtime/service hub and owns the client-state transport contract. RPCore consumes safe APIs and renders the player-facing HUD. Inventory, appearance, missions, and other domain resources remain authoritative for their own rules and data.
 
 Open77 gives each resource an isolated Lua VM. Cross-resource requests therefore use serializable values and named exports; Lua callbacks and internal tables do not cross that boundary. Use Open77's `Open77.exports.call` and await its promise from a managed server coroutine. See [Open77 cross-resource server exports](https://open2077.net/docs/server-exports).
 
@@ -12,6 +12,9 @@ Open77 gives each resource an isolated Lua VM. Cross-resource requests therefore
 | `eventcore.runtime` | `GetServiceCatalog()` | Active provider descriptors, including the provider resource name | Any server resource |
 | `eventcore.runtime` | `GetPlayerContext(playerId)` | Verified stable identity, display name, session ID, last known position, and routing bucket | Trusted server resources; initially `rpcore` |
 | `eventcore.runtime` | `GetPlayerObservers(playerId)` | Current native replication-scope viewers for proximity-aware presentation | Trusted server resources; initially `rpcore` |
+| `eventcore.runtime` | `IsAdmin(playerId)` | Whether a connected player holds Open77's reserved `admin` or `owner` role | Trusted access readers; initially `rpcore` |
+| `eventcore.runtime` | `GetPlayerRoles(playerId)` | The connected player's effective Open77 ACL role labels | Trusted access readers; initially `rpcore` |
+| `eventcore.runtime` | `GetOnlineAdmins()` | Connected players holding the reserved global admin or owner role | Trusted access readers; initially `rpcore` |
 | `eventcore.runtime` | `PublishClientState(playerId, channel, schemaVersion, payload)` | Send a validated, client-safe snapshot through EventCore | Trusted server resources |
 | `eventcore.runtime` | `ClearClientState(playerId, channel, schemaVersion)` | Clear a presentation channel | Trusted server resources |
 
@@ -86,6 +89,26 @@ end)
 
 The `eventcore.runtime` descriptor also lists EventCore's event and persistence exports. Methods that touch SQL, allow client proposals, or expose event payloads remain restricted by the trusted-resource checks described in [`persistence.md`](persistence.md) and [`legacy-compatibility.md`](legacy-compatibility.md); discovery does not grant permission.
 
+## Reading global admin status
+
+Global administration remains assigned by Warden through Open77's ACL. EventCore
+does not grant or revoke ACL rights. It exposes a read-only query so trusted
+server tools can make consistent decisions without inventing another role
+system. EventCore declares `acl.read` in its resource manifest. Add each tool resource to `trustedAccessReaders` in
+`server/access.lua` before it can use these exports.
+
+```lua
+local pending, reason = Open77.exports.call("eventcore", "IsAdmin", playerId)
+if not pending then return nil, reason end
+local isAdmin, callError = pending:await()
+if isAdmin == nil then return nil, callError end
+-- `isAdmin` is true only for the reserved Open77 `admin` or `owner` role.
+```
+
+Use `GetPlayerRoles(playerId)` when a tool needs to distinguish a scoped staff
+role from global administration. `GetOnlineAdmins()` lists connected global
+admins only; offline ACL management remains in Warden.
+
 ## Registering a domain provider
 
 EventCore stores provider descriptors as plain data. A provider name and VM generation are taken from Open77's export invocation context, never from descriptor fields supplied by the caller. A descriptor does not grant access to the provider's methods: the provider still has to export each method and authorize callers inside that method.
@@ -144,6 +167,6 @@ Provider services must validate every argument, use `GetInvokingResource()` for 
 
 ## Compatibility and rollout
 
-`0.3.0-beta.2` adds the client-state feed without changing `API_VERSION` (1). Cross-resource `On`/`Off` exports remain unavailable because Open77's value codec does not transfer callbacks. The in-resource `EventCore.On` and `EventCore.Off` dispatcher remains available inside each EventCore VM; use named exports for server request/response calls and `state:update` for this validated client presentation feed. Rebuild consumers against this beta before using it.
+`0.3.0-beta.3` adds read-only ACL role queries; `API_VERSION` remains 1. Cross-resource `On`/`Off` exports remain unavailable because Open77's value codec does not transfer callbacks. The in-resource `EventCore.On` and `EventCore.Off` dispatcher remains available inside each EventCore VM; use named exports for server request/response calls and `state:update` for this validated client presentation feed. Rebuild consumers against this beta before using it.
 
 The new cross-resource server API requires an Open77 server build that supports server exports, `GetInvokingResourceGeneration`, and `Open77.resource.generation`. The client runtime does not need an update for those server-side calls. Verify the actual server build before deployment.

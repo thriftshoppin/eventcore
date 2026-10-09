@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Added trusted, read-only ACL role queries for player tools: `IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`.
+- Defined global admin as Open77's reserved `admin` or `owner` role; scoped staff roles do not count as global admin.
+- Declared `acl.read` for EventCore. Role assignment remains owned by Warden and the Open77 ACL.
+
 ## 0.3.0-beta.2
 
 - Added EventCore's versioned, trusted server-to-client state feed for presentation snapshots and explicit channel clears.

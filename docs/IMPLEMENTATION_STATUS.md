@@ -1,4 +1,4 @@
-# EventCore 0.3.0-beta.2 checkpoint
+# EventCore 0.3.1 checkpoint
 
 ## Implemented in this repository
 
@@ -8,6 +8,7 @@
 - Opt-in server event notifications for safe, JSON-compatible records.
 - Versioned server service directory: provider/resource identity and VM generation come from Open77's export invocation context; descriptors are serializable; stale provider generations are pruned.
 - Trusted read-only `GetPlayerContext` and `GetPlayerObservers` APIs for RPCore. Context returns the stable account/install identity, display name, current session ID, latest position snapshot, and routing bucket. Observer results are the current native replication-scope viewers.
+- Trusted read-only ACL role queries (`IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`) backed by Warden's effective Open77 ACL. EventCore does not assign roles.
 - Trusted EventCore client-state feed: `PublishClientState` and `ClearClientState` validate the caller, target, and bounded serializable payload; EventCore assigns channel sequence numbers and clients reject stale packets.
 - `state:update` client dispatch with protocol version, channel, schema version, visibility, sequence, and snapshot.
 - Cross-resource event `On`/`Off` callback exports removed because Open77 does not transfer Lua functions across resource VMs. `EventCore.On` / `Off` remain internal to the EventCore VM; exported `Emit` results are value-only.
@@ -17,6 +18,7 @@
 
 - Verify the installed server runtime provides server-to-server `Open77.exports.call`, `GetInvokingResourceGeneration`, and `Open77.resource.generation`. Open77 documents that server exports require an updated server binary.
 - Verify RPCore's resource name remains `rpcore` or update the trusted-resource allowlist in `server/persistence.lua` and the context authorization before integration.
+- Grant EventCore its declared `acl.read` capability in Warden and verify trusted tools can query roles while untrusted callers are refused.
 - Call `GetRuntimeInfo`, register/list/unregister a test provider, and confirm descriptors are removed after provider reload/stop.
 - Query player context during a live session, confirm the Open77 `license`/`userId` fields and position bucket, and check `GetPlayerObservers` against actual native scope.
 - Test SQL permissions, schema creation, save/load across a server restart, and queue/drop behavior during an SQL outage.
@@ -40,4 +42,4 @@
 
 ## Release preservation
 
-The `0.2.0-beta.1` archive remains a separate, unchanged artifact. This repository and the new archive target `0.3.0-beta.2`.
+The `0.2.0-beta.1` archive remains a separate, unchanged artifact. This repository and the new archive target `0.3.0-beta.3`.

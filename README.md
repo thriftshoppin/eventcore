@@ -4,6 +4,14 @@ EventCore is the server-side runtime and service hub for Open77 roleplay resourc
 
 Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. They publish versioned service descriptors and validated exports for RPCore and other consumers. EventCore is the common hub and persistence layer, not a replacement for each domain's rules.
 
+## 0.3.1
+
+Adds read-only access queries backed by Open77's effective ACL. Trusted server
+tools can ask whether a connected player holds the reserved `admin` or `owner`
+role, read that player's role labels, or list connected global admins. Warden
+remains the authority for role assignment; EventCore never grants admin rights.
+EventCore declares the `acl.read` capability in its resource manifest. Allowlist each server tool in `server/access.lua` before it can use these exports.
+
 ## 0.3.0-beta.2
 
 Adds EventCore's versioned client-state feed. Trusted server resources publish
@@ -57,9 +65,17 @@ EventCore uses Open77's built-in MySQL/MariaDB bridge from server scripts only. 
 
 Event history is a bounded asynchronous audit queue, not a write-ahead log. Authoritative gameplay resources must explicitly save their state after accepted changes and load it at the correct lifecycle point. Client proposals are untrusted.
 
+## Warden roles for tools
+
+EventCore exposes read-only `IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`
+exports for trusted server tools. They read Open77's effective ACL and recognize
+only the reserved `admin` and `owner` roles as global administrators. Scoped
+roles such as `helper`, `moderator`, and `operator` remain distinguishable.
+Warden assigns roles; EventCore never promotes players. EventCore declares `acl.read` in its resource manifest. Add each tool resource that needs these queries to `trustedAccessReaders` in `server/access.lua`.
+
 ## Compatibility and release
 
-The `0.3.0-beta.2` archive is separate from the earlier `0.2.0-beta.1` release. The service directory requires an Open77 server build with server-to-server exports and resource-generation APIs. Verify compatibility on the actual server before enabling it for players.
+The `0.3.1` archive includes read-only ACL role queries and remains separate from the earlier `0.2.0-beta.1` release. The service directory requires an Open77 server build with server-to-server exports and resource-generation APIs. Verify compatibility on the actual server before enabling it for players.
 
 For legacy adapters, see [`docs/legacy-compatibility.md`](docs/legacy-compatibility.md). EventCore does not patch RED4ext, Open77 binaries, or third-party native plugins. The planned custom-clothing boundary and stable outfit-code rules are in [`docs/server-managed-clothing.md`](docs/server-managed-clothing.md).
 
