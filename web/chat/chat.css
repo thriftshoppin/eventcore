@@ -1,13 +1,21 @@
-:root{color-scheme:dark;--green:#54e391;--text:#fff;font:15px Bahnschrift,"Segoe UI",sans-serif}
+:root{color-scheme:dark;--green:#54e391;--text:#fff;font:12px Bahnschrift,"Segoe UI",sans-serif}
 *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}body{pointer-events:none}
-#chat{position:fixed;left:3.2vw;top:5vh;width:min(430px,36vw);display:flex;flex-direction:column;gap:4px;color:var(--text)}
-#messages{display:flex;flex-direction:column;align-items:flex-start;gap:2px;max-height:27vh;overflow:hidden;opacity:1;transition:opacity .15s ease;text-shadow:0 1px 3px #000}
-.line{max-width:100%;padding:0;color:var(--text);font-size:14px;line-height:1.3;overflow-wrap:anywhere}
-.line .author{color:var(--text);font:500 14px/1.3 Bahnschrift,"Segoe UI",sans-serif;margin-right:6px}
-.line.system{color:var(--text)}
-body.closed:not(.has-lines) #messages{visibility:hidden;opacity:0}
-body.closed #composer{display:none}
-#composer{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:0;background:transparent;border:0;box-shadow:none}
-.prompt{flex:0 0 auto;color:var(--green);font:600 14px/1.3 Consolas,monospace;white-space:nowrap}
-input{min-width:0;flex:1;border:0;outline:0;padding:0;color:var(--text);background:transparent;caret-color:var(--green);font:500 14px/1.3 Bahnschrift,"Segoe UI",sans-serif}
+#chat{position:fixed;left:2.5vw;top:4vh;width:min(390px,32vw);display:flex;flex-direction:column;align-items:stretch;gap:3px;color:var(--text);text-shadow:0 1px 3px #000}
+#composer{pointer-events:auto;display:flex;align-items:center;gap:5px;min-height:16px;padding:0;background:transparent;border:0;box-shadow:none}
+.prompt{flex:0 0 auto;color:var(--green);font:600 12px/1.25 Consolas,monospace;white-space:nowrap}
+input{min-width:0;flex:1;border:0;outline:0;padding:0;color:var(--text);background:transparent;caret-color:var(--green);font:500 12px/1.25 Bahnschrift,"Segoe UI",sans-serif}
 input::placeholder{color:transparent}.hint{display:none}
+#messages{display:flex;flex-direction:column;align-items:flex-start;gap:1px;max-height:5.6em;overflow:hidden;opacity:1;transition:opacity .15s ease;text-shadow:0 1px 3px #000}
+.line{max-width:100%;padding:0;color:var(--text);font-size:12px;line-height:1.28;overflow-wrap:anywhere}
+.line .author{color:var(--text);font:600 12px/1.28 Bahnschrift,"Segoe UI",sans-serif;margin-right:5px}
+.line .author.eventcore{color:var(--green)}
+body.closed:not(.has-lines) #messages{visibility:hidden;opacity:0}
+body.closed #composer,body.closed #suggestions{display:none}
+#suggestions{pointer-events:auto;max-height:5.2em;overflow:hidden;color:var(--text);font-size:11px;line-height:1.25}
+#suggestion-list{display:flex;flex-direction:column;gap:1px}
+.suggestion{display:grid;grid-template-columns:minmax(86px,auto) 1fr;gap:8px;max-width:100%;padding:0;cursor:pointer;white-space:nowrap;overflow:hidden}
+.suggestion.selected .command,.command{color:var(--green);font:600 11px/1.25 Consolas,monospace}
+.suggestion .params{color:#c8d8cf;margin-left:4px;font:10px/1.25 Consolas,monospace}
+.suggestion .help{overflow:hidden;text-overflow:ellipsis;color:#d6ddd9}
+.suggestion-help{display:flex;gap:8px;color:#9eaaa3;font:10px/1.2 Consolas,monospace}
+.suggestion-help kbd{color:var(--green);font:inherit}

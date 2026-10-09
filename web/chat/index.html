@@ -9,12 +9,16 @@
 </head>
 <body class="closed">
   <section id="chat" aria-label="Server chat">
-    <div id="messages" aria-live="polite"></div>
     <form id="composer">
       <span class="prompt">eventcore:</span>
       <input id="message" type="text" maxlength="512" autocomplete="off" spellcheck="false" aria-label="Chat message or command" placeholder="">
       <span class="hint" aria-hidden="true"></span>
     </form>
+    <section id="suggestions" aria-label="Command suggestions" hidden>
+      <div id="suggestion-list" role="listbox"></div>
+      <div class="suggestion-help"><kbd>Tab</kbd> complete <span>↑/↓ choose</span></div>
+    </section>
+    <div id="messages" aria-live="polite" aria-label="Recent messages"></div>
   </section>
 </body>
 </html>

@@ -5,6 +5,7 @@ local page
 local opened = false
 local history = {}
 local MAX_HISTORY = 60
+local lastSuggestionRequest = -1
 
 local function post(channel, payload)
     if page then page:send(channel, payload or {}) end
@@ -23,6 +24,42 @@ local function remember(line)
     }
     while #history > MAX_HISTORY do table.remove(history, 1) end
     post("eventcore:chat:line", history[#history])
+end
+
+local function requestSuggestions()
+    local now = Open77 and Open77.time and type(Open77.time.monotonic) == "function"
+        and Open77.time.monotonic() or os.clock()
+    if now - lastSuggestionRequest < 0.75 then return end
+    lastSuggestionRequest = now
+    if type(GetRegisteredCommands) == "function" then
+        local suggestions = {}
+        for _, entry in ipairs(GetRegisteredCommands() or {}) do
+            if type(entry) == "table" and not entry.restricted and type(entry.name) == "string" then
+                suggestions[#suggestions + 1] = {
+                    command = "/" .. entry.name,
+                    help = type(entry.help) == "string" and entry.help or "Client command",
+                    parameters = type(entry.parameters) == "table" and entry.parameters or {},
+                }
+            end
+        end
+        if #suggestions > 0 then post("eventcore:chat:suggestions", { suggestions = suggestions }) end
+    end
+    TriggerServerEvent("chat:ready")
+end
+
+local function relayNativeMessage(message)
+    if type(message) == "string" then message = { text = message } end
+    if type(message) ~= "table" then return end
+    local author = type(message.author) == "string" and message.author or ""
+    local text = type(message.text) == "string" and message.text or ""
+    if text == "" and type(message.args) == "table" then
+        author = author ~= "" and author or tostring(message.args[1] or "")
+        text = tostring(message.args[2] or "")
+        for index = 3, #message.args do text = text .. " " .. tostring(message.args[index]) end
+    end
+    if text == "" then return end
+    if author == "" and (message.type == "system" or message.type == "server") then author = "Server" end
+    remember({ type = "system", author = author, text = text })
 end
 
 local function closeChat()
@@ -115,11 +152,14 @@ local function createPage()
     page:on("eventcore:chat:ready", function()
         post("eventcore:chat:history", { lines = history })
         post("eventcore:chat:open", { open = opened, history = history })
+        requestSuggestions()
+        CreateThread(function() Wait(1000); requestSuggestions() end)
     end)
     page:on("eventcore:chat:submit", function(payload)
         if type(payload) == "table" then submit(payload.text) end
     end)
     page:on("eventcore:chat:close", closeChat)
+    page:on("eventcore:chat:requestSuggestions", requestSuggestions)
     return true
 end
 
@@ -143,13 +183,36 @@ local function registerChatKey()
 end
 
 RegisterNetEvent("eventcore:net:chat:line", remember)
+RegisterNetEvent("chat:addMessage", relayNativeMessage)
+RegisterNetEvent("chat:addSuggestion", function(command, help, parameters)
+    post("eventcore:chat:suggestion", {
+        command = tostring(command or ""), help = tostring(help or ""),
+        parameters = type(parameters) == "table" and parameters or {},
+    })
+end)
+RegisterNetEvent("chat:addSuggestions", function(suggestions)
+    if type(suggestions) == "table" and type(suggestions.suggestions) == "table" then
+        suggestions = suggestions.suggestions
+    end
+    post("eventcore:chat:suggestions", { suggestions = type(suggestions) == "table" and suggestions or {} })
+end)
+RegisterNetEvent("chat:removeSuggestion", function(command)
+    post("eventcore:chat:removeSuggestion", { command = tostring(command or "") })
+end)
+RegisterNetEvent("chat:clearSuggestions", function() post("eventcore:chat:clearSuggestions", {}) end)
 -- Open77 consumes Escape in the game window before it reaches the focused
 -- WebUI, then republishes it as pauseKey. Close from that host event.
 AddEventHandler("open77:pauseKey", closeChat)
 RegisterNetEvent("open77:command:result", function(raw, accepted, message)
     if type(message) ~= "string" then return end
     local text = message
-    if accepted == false and raw and raw ~= "" then text = tostring(raw) .. ": " .. message end
+    if accepted == false and message == "unknown_command" then
+        text = "Unknown command: /" .. tostring(raw or "") .. ". Type / to browse available commands."
+    elseif accepted == false and message:match("^permission_denied:") then
+        text = "You do not have permission to run /" .. tostring(raw or "") .. "."
+    elseif accepted == false and raw and raw ~= "" then
+        text = tostring(raw) .. ": " .. message
+    end
     remember({ type = "system", author = "EventCore", text = text })
 end)
 

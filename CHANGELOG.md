@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Added Open77 command suggestions and native server/resource message forwarding to the EventCore chat.
+- Tightened the top-left chat typography and layout to fit four recent messages below the input.
 - Documented EventCore's scoped-storage role in native game-map integrations: persist pin definitions while the game renders the map and blips.
 
 ## 0.6.5

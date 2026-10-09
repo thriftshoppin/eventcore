@@ -9,9 +9,9 @@ EventCore supplies a replaceable chat UI while Open77 remains responsible for co
 3. Keep other resources and their command registrations enabled. EventCore sends slash commands through Open77's authenticated command dispatcher, which still enforces each `command.<name>` ACL.
 4. Restart the server and check the EventCore startup logs. In game, press **T** to open chat. A normal message is sent as chat; `/command arguments` runs a registered local or server command.
 
-The open chat prompt is `eventcore:`. It is green; typed text and message output are white. Messages have exactly one source label: player names for player chat, **Server** for server output, **EventCore** for EventCore system replies, and an optional resource-provided label for messages sent through the approved `SendChat` export. Press **Escape** or controller **B** to close chat without sending.
+The open chat prompt is `eventcore:`. It is green; typed text and message output are white. Messages have exactly one source label: player names for player chat, **Server** for server output, **EventCore** for EventCore system replies, and an optional resource-provided label for messages sent through the approved `SendChat` export. Open77's `chat:ready` and `chat:addSuggestions` events feed the slash-command suggestions; use **Tab** to complete a match and **Up/Down** to select one. Four recent messages fit beneath the input, and command errors remain visible after the chat closes. Press **Escape** or controller **B** to close chat without sending.
 
-Removing `open77_chat` replaces its input and presentation resource. It does not unregister commands from other resources. It also means features implemented only by that chat UI, such as its autocomplete/history presentation, are not available until an EventCore equivalent is added.
+Removing `open77_chat` replaces its input and presentation resource. It does not unregister commands from other resources. EventCore reads command suggestions from Open77 resources and does not take ownership of those commands or their permissions. Typed-command history is not persisted between sessions.
 
 ## Send messages from another resource
 
