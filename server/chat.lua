@@ -30,9 +30,11 @@ function EventCore.Chat.Send(target, message, kind, author)
     end
     local text = cleanMessage(message)
     if not text then return false, "invalid_chat_message" end
+    local sourceLabel = type(author) == "string" and author:sub(1, 48) or ""
+    if kind == "system" and sourceLabel == "" then sourceLabel = "Server" end
     local line = {
         type = kind == "system" and "system" or "player",
-        author = type(author) == "string" and author:sub(1, 48) or "",
+        author = sourceLabel,
         text = text,
         at = os.time(),
     }
@@ -44,12 +46,12 @@ RegisterNetEvent("eventcore:chat:send", function(message)
     if not playerId or playerId < 1 then return end
     local now = GetGameTimer()
     if lastMessageAt[playerId] and now - lastMessageAt[playerId] < MESSAGE_INTERVAL_MS then
-        EventCore.EmitClient("chat:line", playerId, { type = "system", author = "", text = "Please wait before sending another message.", at = os.time() })
+        EventCore.EmitClient("chat:line", playerId, { type = "system", author = "Server", text = "Please wait before sending another message.", at = os.time() })
         return
     end
     local text = cleanMessage(message)
     if not text then
-        EventCore.EmitClient("chat:line", playerId, { type = "system", author = "", text = "Message is empty or exceeds the 512 byte limit.", at = os.time() })
+        EventCore.EmitClient("chat:line", playerId, { type = "system", author = "Server", text = "Message is empty or exceeds the 512 byte limit.", at = os.time() })
         return
     end
     lastMessageAt[playerId] = now

@@ -4,16 +4,18 @@ EventCore supplies a replaceable chat UI while Open77 remains responsible for co
 
 ## Install
 
-1. Install EventCore 0.6.3 or newer as a resource and keep it in the server's `resources.load` list.
+1. Install EventCore 0.6.4 or newer as a resource and keep it in the server's `resources.load` list.
 2. Remove `open77_chat` from `resources.load` after EventCore is installed. This stops the bundled chat UI and releases its T key binding. EventCore registers its own T binding.
 3. Keep other resources and their command registrations enabled. EventCore sends slash commands through Open77's authenticated command dispatcher, which still enforces each `command.<name>` ACL.
 4. Restart the server and check the EventCore startup logs. In game, press **T** to open chat. A normal message is sent as chat; `/command arguments` runs a registered local or server command.
+
+The open chat prompt is `eventcore:`. It is green; typed text and message output are white. Messages have one source label: player names for player chat, **Server** for server output, and a resource-provided label for messages sent through the approved `SendChat` export.
 
 Removing `open77_chat` replaces its input and presentation resource. It does not unregister commands from other resources. It also means features implemented only by that chat UI, such as its autocomplete/history presentation, are not available until an EventCore equivalent is added.
 
 ## Send messages from another resource
 
-Add the calling resource to EventCore's `server/whitelist.lua`, then call the `SendChat` server export. It only accepts approved callers and broadcasts through EventCore's chat feed:
+Add the calling resource to EventCore's `server/whitelist.lua`, then call the `SendChat` server export. The fourth argument is the single visible source label; omit it for **Server** output. The export only accepts approved callers and broadcasts through EventCore's chat feed:
 
 ```lua
 local pending, reason = Open77.exports.call("eventcore", "SendChat", -1, "The clinic is open.", "system", "DISPATCH")

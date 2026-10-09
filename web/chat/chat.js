@@ -2,6 +2,7 @@
   'use strict';
   const body = document.body, messages = document.getElementById('messages'), input = document.getElementById('message');
   const lines = [];
+  let hideTimer = 0;
   function add(line) {
     if (!line || typeof line.text !== 'string') return;
     lines.push({ type: line.type === 'system' ? 'system' : 'player', author: typeof line.author === 'string' ? line.author : '', text: line.text });
@@ -17,6 +18,20 @@
     });
     messages.scrollTop = messages.scrollHeight;
   }
+  function showRecentLines() {
+    body.classList.add('has-lines');
+    window.clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(() => body.classList.remove('has-lines'), 8000);
+  }
+  function focusInput() {
+    const focus = () => {
+      if (!body.classList.contains('closed')) {
+        input.focus({ preventScroll: true });
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    };
+    window.requestAnimationFrame(() => { focus(); window.setTimeout(focus, 50); });
+  }
   function close() { if (window.Open77) Open77.emit('eventcore:chat:close', {}); }
   document.getElementById('composer').addEventListener('submit', event => {
     event.preventDefault(); const text = input.value; input.value = '';
@@ -24,11 +39,11 @@
   });
   input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(); } });
   if (window.Open77 && typeof Open77.on === 'function') {
-    Open77.on('eventcore:chat:line', add);
+    Open77.on('eventcore:chat:line', line => { add(line); showRecentLines(); });
     Open77.on('eventcore:chat:history', data => { lines.length = 0; (data && Array.isArray(data.lines) ? data.lines : []).forEach(add); render(); });
     Open77.on('eventcore:chat:open', data => {
       const open = !!(data && data.open); body.classList.toggle('closed', !open);
-      if (open) { (data.history || []).forEach(add); input.value = ''; input.focus(); }
+      if (open) { (data.history || []).forEach(add); input.value = ''; focusInput(); }
     });
     Open77.emit('eventcore:chat:ready', {});
   }

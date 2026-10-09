@@ -12,9 +12,12 @@ end
 
 local function remember(line)
     if type(line) ~= "table" or type(line.text) ~= "string" then return end
+    local systemLine = line.type == "system"
+    local author = type(line.author) == "string" and line.author:sub(1, 48) or ""
+    if systemLine and author == "" then author = "EventCore" end
     history[#history + 1] = {
-        type = line.type == "system" and "system" or "player",
-        author = type(line.author) == "string" and line.author:sub(1, 48) or "",
+        type = systemLine and "system" or "player",
+        author = author,
         text = line.text:sub(1, 512),
         at = type(line.at) == "number" and line.at or os.time(),
     }
@@ -31,8 +34,13 @@ end
 local function openChat()
     if not page then return end
     opened = true
+    if type(page.setFocus) == "function" then
+        local called, focused, reason = pcall(function() return page:setFocus(true, false) end)
+        if not called or focused ~= true then
+            print("[EventCore][chat] keyboard focus failed: " .. tostring(called and reason or focused))
+        end
+    end
     post("eventcore:chat:open", { open = true, history = history })
-    if type(page.setFocus) == "function" then page:setFocus(true, true) end
 end
 
 local function words(line)
@@ -125,7 +133,7 @@ RegisterNetEvent("open77:command:result", function(raw, accepted, message)
     if type(message) ~= "string" then return end
     local text = message
     if accepted == false and raw and raw ~= "" then text = tostring(raw) .. ": " .. message end
-    remember({ type = "system", text = text })
+    remember({ type = "system", author = "EventCore", text = text })
 end)
 
 AddEventHandler("onClientResourceStart", function(name)

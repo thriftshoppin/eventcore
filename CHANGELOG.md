@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.4
+- Replaced the boxed chat field with a transparent text overlay and green `eventcore:` prompt.
+- Focused the input on open and kept recent messages visible briefly after closing.
+- Used one source label per message, including `Server` for server output.
+
 ## 0.6.3
 - Matched the chat input surface to Open77's stock chat styling with green accents.
 
