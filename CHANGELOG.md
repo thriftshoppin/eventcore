@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.3
+- Matched the chat input surface to Open77's stock chat styling with green accents.
+
 ## 0.6.2
 - Reduced the chat panel width and tightened its input spacing and typography.
 
