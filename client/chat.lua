@@ -134,10 +134,6 @@ AddEventHandler("onClientResourceStart", function(name)
     registerChatKey()
 end)
 
-AddEventHandler("open77:menuStateChanged", function(isOpen)
-    if isOpen == true or tostring(isOpen) == "1" or tostring(isOpen) == "true" then closeChat() end
-end)
-
 AddEventHandler("onClientResourceStop", function(name)
     if name ~= GetCurrentResourceName() then return end
     closeChat()

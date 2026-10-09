@@ -1,4 +1,4 @@
-# EventCore 0.6.0 checkpoint
+# EventCore 0.6.1 checkpoint
 
 ## Implemented in this repository
 
@@ -47,4 +47,4 @@
 
 ## Release preservation
 
-The local repository version is 0.6.0. Chat and map integration still need in-game verification on the target Open77 build. No remote release has been made.
+The local repository version is 0.6.1. Chat and map integration still need in-game verification on the target Open77 build. No remote release has been made.

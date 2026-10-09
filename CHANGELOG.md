@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+- Kept the focused chat open instead of closing it on the menu-focus event it triggers.
+- Moved the chat panel to the top-left of the screen.
+
 ## 0.6.0
 
 - Added an EventCore-owned, skinnable in-game chat surface and T key mapping.
