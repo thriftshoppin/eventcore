@@ -59,7 +59,7 @@ end)
 ```
 
 The feed is transport, not a provider or source of truth. Resource join/restart
-replay, subscriptions, update cadence, and RPCore's current SIMNC compatibility
+replay, subscriptions, update cadence, and RPCore's current provider compatibility
 reader still need integration and live-server verification.
 
 The player-context identity prefers the Open77 account `license` and falls back to the persistent installation `userId` on runtimes without `license`. The session `playerId` is for live addressing only. Position is Open77's latest replicated server snapshot and can be unavailable or slightly stale; gameplay decisions must revalidate conditions at the moment of action.
@@ -114,15 +114,15 @@ admins only; offline ACL management remains in Warden.
 EventCore stores provider descriptors as plain data. A provider name and VM generation are taken from Open77's export invocation context, never from descriptor fields supplied by the caller. A descriptor does not grant access to the provider's methods: the provider still has to export each method and authorize callers inside that method.
 
 ```lua
--- simnc_inventory/open77.lua
-resource "simnc_inventory"
+-- inventory_mod/open77.lua
+resource "inventory_mod"
 version "1.0.0"
 dependency "eventcore >=0.3.0-beta.1"
 server_script "server/main.lua"
 ```
 
 ```lua
--- simnc_inventory/server/main.lua
+-- inventory_mod/server/main.lua
 exports("GetSnapshot", function(playerId)
     if GetInvokingResource() ~= "rpcore" then return nil, "caller_denied" end
     -- Validate playerId and return only the safe fields RPCore is allowed to show.
@@ -131,11 +131,11 @@ end)
 
 CreateThread(function()
     local pending, dispatchError = Open77.exports.call("eventcore", "RegisterService", {
-        id = "simnc.inventory",
+        id = "inventory",
         version = "1.0.0",
         apiVersion = 1,
         methods = { "GetSnapshot" },
-        events = { "simnc:inventory:changed" },
+        events = { "inventory:changed" },
         description = "Authoritative inventory summary for presentation.",
     })
     if not pending then

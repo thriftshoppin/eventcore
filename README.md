@@ -1,5 +1,7 @@
 # EventCore
 
+EventCore is intended to remain open source and free for anyone to use and modify. It is under development; publication terms and license will be stated with the public release.
+
 EventCore is the server-side runtime and service hub for Open77 roleplay resources. Its intended relationship with RPCore is straightforward: EventCore provides versioned services, trusted player/session context, events, scoped observer information, and durable server storage; RPCore consumes those contracts and turns approved information into an immersive HUD and player-facing tools.
 
 EventCore also owns the framework's administrator entry point. `/eventcore.admin`
