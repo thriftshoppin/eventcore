@@ -15,6 +15,8 @@ Quick actions are limited to commands explicitly granted by Warden, and Open77's
 restricted command dispatcher checks that command grant again before execution.
 Warden remains the only authority that assigns global roles.
 
+EventCore also owns a skinnable in-game chat surface. It uses **T** to open, accepts normal chat and slash commands, and routes slash commands through Open77's existing command registry and ACL checks. To replace the bundled chat UI and release its T binding, remove `open77_chat` from `resources.load` after the EventCore chat is installed. Command handlers registered by other resources remain registered; only the old chat surface is replaced. See [`docs/chat.md`](docs/chat.md) for install details and the EventCore chat-send export.
+
 The admin surface is being migrated into EventCore in increments. The current
 panel fronts the existing Open77 restricted command handlers; gameplay rules and
 the command implementations remain in their owning resources until migrated.
@@ -30,6 +32,14 @@ and per-player storage, bounded atomic batches, and server-derived ownership.
 Consumers use EventCore exports instead of database credentials or raw SQL.
 See [`docs/persistence.md`](docs/persistence.md) for trust configuration and
 the storage contract.
+
+## 0.6.0
+
+Adds the EventCore chat interface and bounded server message relay. Normal
+messages are server-validated and broadcast to EventCore clients; slash
+commands continue through Open77's authenticated command dispatcher and ACL.
+Approved resources can publish their own system/player chat lines through the
+`SendChat` export.
 
 ## 0.4.0
 

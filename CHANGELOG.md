@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- Added an EventCore-owned, skinnable in-game chat surface and T key mapping.
+- Added server-side chat validation, a bounded send rate, and client fan-out.
+- Routed slash commands through Open77's existing authenticated command dispatcher; command ACLs and resource command registrations remain in force.
+- Added the trusted `SendChat` export so approved resources can publish messages through the EventCore UI.
+- Documented removing `open77_chat` from the server resource list to replace its UI and release its keybind.
+
 ## 0.5.0
 
 - Added a server-only structured storage gateway so approved resources can persist their own data without direct SQL access.

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EventCore Chat</title>
+  <link rel="stylesheet" href="chat.css">
+  <script src="chat.js" defer></script>
+</head>
+<body class="closed">
+  <section id="chat" aria-label="Server chat">
+    <div id="messages" aria-live="polite"></div>
+    <form id="composer">
+      <span class="prompt">›</span>
+      <input id="message" type="text" maxlength="512" autocomplete="off" spellcheck="false" aria-label="Chat message or command" placeholder="Message or /command">
+      <span class="hint">ENTER SEND · ESC CLOSE</span>
+    </form>
+  </section>
+</body>
+</html>
