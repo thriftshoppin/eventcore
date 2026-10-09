@@ -8,9 +8,25 @@ EventCore 0.5.0 includes the server-only SQL bridge and a structured storage gat
 2. In the `server.jsonc` used to launch the server, enable `database.enabled` and configure `connectionStringEnvironmentVariable` (default: `OP77_DATABASE_CONNECTION`). Keep `connectionString` empty.
 3. Set `OP77_DATABASE_CONNECTION` in the dedicated server process environment to a MySqlConnector connection string. Do not put the password in this repository, in `open77.lua`, or in client files.
 4. Restart the dedicated server, then approve EventCore's `database.access` permission in Warden. On startup, EventCore creates the persistence tables shown in [`schema.sql`](schema.sql).
-5. Keep `database.access` on EventCore only. To approve a structured-storage consumer, install its resource folder, have its `open77.lua` declare `dependency "eventcore >=0.5.0"`, and add its exact resource name to `EventCore.Whitelist` in `server/whitelist.lua`. The manifest dependency is visible and ensures load order; this reviewed Lua list is the authorization gate. See [`examples/whitelist.lua`](../examples/whitelist.lua) for the template. Restart EventCore after changing the list.
+5. Keep `database.access` on EventCore only. To approve a structured-storage consumer, install its resource folder, have its `open77.lua` declare `dependency "eventcore >=0.5.0"`, and add its exact folder/resource name to `EventCore.Whitelist` in `server/whitelist.lua`. The manifest dependency is visible and ensures load order; this reviewed Lua list is the authorization gate. Restart EventCore after changing the list.
 
 Open77's database bridge is disabled by default, supports MySQL/MariaDB, and exposes parameterized asynchronous queries to server scripts with `database.access`. Its `.await` methods must run from a host-managed coroutine. See [Open77 SQL setup](https://open2077.net/docs/database).
+
+## Add an approved resource
+
+Install the mod's resource folder under the server's resources root and make sure it is selected by `resources.load`. In that resource's `open77.lua`, declare:
+
+```lua
+dependency "eventcore >=0.5.0"
+```
+
+Then add one line to the `EventCore.Whitelist` table in EventCore's `server/whitelist.lua`, replacing the placeholder with the exact resource/folder name:
+
+```lua
+["resource_folder_name"] = true,
+```
+
+Keep the comma. Lua table entries use `=`, not `:`. The resource name must also be an installed, selected resource. This entry enables only that resource's isolated EventCore storage; do not grant it `database.access`.
 
 ## What is persisted
 
@@ -39,7 +55,7 @@ dependency "eventcore >=0.5.0"
 server_script "server/main.lua"
 ```
 
-Add `my_clothing_mod = true` to `EventCore.Whitelist` in `server/whitelist.lua` only after installing and reviewing the resource folder. Do not grant it `database.access`. A manifest dependency alone is not authorization, and an allowlist entry without the dependency is denied.
+Add `["my_clothing_mod"] = true,` to `EventCore.Whitelist` in `server/whitelist.lua` only after installing and reviewing the resource folder. Do not grant it `database.access`. A manifest dependency alone is not authorization, and an allowlist entry without the dependency is denied.
 
 ```lua
 local function eventCoreCall(method, ...)

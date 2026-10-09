@@ -1,8 +1,10 @@
--- Reviewed consumers allowed to use EventCore's structured storage exports.
--- To approve a mod, install its resource folder, declare `dependency "eventcore"`
--- in that folder's open77.lua, and add its exact resource name here.
--- This grants only its EventCore storage partition, never database.access/SQL.
+-- Approved resources for EventCore's structured storage exports.
+-- Install the resource folder and declare `dependency "eventcore >=0.5.0"`
+-- in its open77.lua, then add one line below using this exact syntax:
+--     ["resource_folder_name"] = true,
+-- This grants that resource only its own EventCore storage partition.
 EventCore = EventCore or {}
 EventCore.Whitelist = {
-    rpcore = true,
+    ["rpcore"] = true,
+    -- ["resource_folder_name"] = true,
 }
