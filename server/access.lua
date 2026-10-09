@@ -41,23 +41,23 @@ local function hasGlobalAdminRole(roles)
     return false
 end
 
---- True only for Open77's reserved global admin/owner roles.
---- Scoped roles such as helper, moderator, or operator remain false.
-function EventCore.Access.IsAdmin(playerId)
-    if not trustedCaller() then return nil, "access_caller_not_trusted" end
+--- Internal same-resource check for EventCore's own admin commands and events.
+--- Unlike the public export this never accepts a caller supplied by another
+--- resource; it reads the session ACL in EventCore's own server VM.
+function EventCore.Access.IsLocalAdmin(playerId)
     local roles, reason = playerRoles(playerId)
     if not roles then return nil, reason end
     return hasGlobalAdminRole(roles)
 end
 
---- Return the connected players holding Open77's reserved admin/owner roles.
-function EventCore.Access.GetOnlineAdmins()
-    if not trustedCaller() then return nil, "access_caller_not_trusted" end
-    if type(GetPlayers) ~= "function" then return nil, "player_list_unavailable" end
+function EventCore.Access.GetLocalPlayerRoles(playerId)
+    return playerRoles(playerId)
+end
 
+function EventCore.Access.GetLocalOnlineAdmins()
+    if type(GetPlayers) ~= "function" then return nil, "player_list_unavailable" end
     local ok, playerIds = pcall(GetPlayers)
     if not ok or type(playerIds) ~= "table" then return nil, "player_list_unavailable" end
-
     local result = {}
     for _, value in ipairs(playerIds) do
         local playerId = tonumber(value)
@@ -71,6 +71,19 @@ function EventCore.Access.GetOnlineAdmins()
     end
     table.sort(result, function(left, right) return left.playerId < right.playerId end)
     return result
+end
+
+--- True only for Open77's reserved global admin/owner roles.
+--- Scoped roles such as helper, moderator, or operator remain false.
+function EventCore.Access.IsAdmin(playerId)
+    if not trustedCaller() then return nil, "access_caller_not_trusted" end
+    return EventCore.Access.IsLocalAdmin(playerId)
+end
+
+--- Return the connected players holding Open77's reserved admin/owner roles.
+function EventCore.Access.GetOnlineAdmins()
+    if not trustedCaller() then return nil, "access_caller_not_trusted" end
+    return EventCore.Access.GetLocalOnlineAdmins()
 end
 
 exports("IsAdmin", EventCore.Access.IsAdmin)

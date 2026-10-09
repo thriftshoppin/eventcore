@@ -4,7 +4,7 @@
 ]]
 
 EventCore = EventCore or {}
-EventCore.VERSION = "0.3.1"
+EventCore.VERSION = "0.4.0"
 EventCore.API_VERSION = 1
 EventCore.STATE_FEED_EVENT = "state:update"
 
@@ -142,4 +142,22 @@ function EventCore.GetRegisteredCount()
         count = count + #list
     end
     return count
+end
+
+--- Return a detached diagnostic list for server administration views.
+function EventCore.GetHandlerDiagnostics()
+    local result = {}
+    for eventName, list in pairs(handlers) do
+        local resources = {}
+        for _, record in ipairs(list) do
+            resources[record.resource] = (resources[record.resource] or 0) + 1
+        end
+        result[#result + 1] = {
+            event = eventName,
+            count = #list,
+            resources = resources,
+        }
+    end
+    table.sort(result, function(left, right) return left.event < right.event end)
+    return result
 end

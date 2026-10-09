@@ -1,4 +1,4 @@
-# EventCore 0.3.1 checkpoint
+# EventCore 0.4.0 checkpoint
 
 ## Implemented in this repository
 
@@ -9,6 +9,8 @@
 - Versioned server service directory: provider/resource identity and VM generation come from Open77's export invocation context; descriptors are serializable; stale provider generations are pruned.
 - Trusted read-only `GetPlayerContext` and `GetPlayerObservers` APIs for RPCore. Context returns the stable account/install identity, display name, current session ID, latest position snapshot, and routing bucket. Observer results are the current native replication-scope viewers.
 - Trusted read-only ACL role queries (`IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`) backed by Warden's effective Open77 ACL. EventCore does not assign roles.
+- EventCore-owned admin console entry point and text commands (`/eventcore.admin`, `/eventcore.admins`, `/eventcore.roles`, `/eventcore.services`, `/eventcore.events`) protected by Warden's reserved global admin/owner check.
+- The panel displays player roles, current services, and registered EventCore event handlers. Its quick actions are gated by the operator's individual `command.*` ACL grants and forwarded to Open77's restricted dispatcher for a second check.
 - Trusted EventCore client-state feed: `PublishClientState` and `ClearClientState` validate the caller, target, and bounded serializable payload; EventCore assigns channel sequence numbers and clients reject stale packets.
 - `state:update` client dispatch with protocol version, channel, schema version, visibility, sequence, and snapshot.
 - Cross-resource event `On`/`Off` callback exports removed because Open77 does not transfer Lua functions across resource VMs. `EventCore.On` / `Off` remain internal to the EventCore VM; exported `Emit` results are value-only.

@@ -2,7 +2,31 @@
 
 EventCore is the server-side runtime and service hub for Open77 roleplay resources. Its intended relationship with RPCore is straightforward: EventCore provides versioned services, trusted player/session context, events, scoped observer information, and durable server storage; RPCore consumes those contracts and turns approved information into an immersive HUD and player-facing tools.
 
+EventCore also owns the framework's administrator entry point. `/eventcore.admin`
+opens its administrator console; `/eventcore.admins`, `/eventcore.roles`,
+`/eventcore.services`, `/eventcore.events`, and `/eventcore.help` provide text access to Warden role,
+service, and event-handler diagnostics. The panel includes a player roster,
+authorized quick actions, a Warden-checked `admin.*` command console with
+structured tool output, the service directory, and registered event handlers.
+Every EventCore entry checks Warden for the reserved `admin` or `owner` role.
+Quick actions are limited to commands explicitly granted by Warden, and Open77's
+restricted command dispatcher checks that command grant again before execution.
+Warden remains the only authority that assigns global roles.
+
+The admin surface is being migrated into EventCore in increments. The current
+panel fronts the existing Open77 restricted command handlers; gameplay rules and
+the command implementations remain in their owning resources until migrated.
+See [`docs/admin-console.md`](docs/admin-console.md) for commands, panel actions,
+and the authorization flow.
+
 Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. They publish versioned service descriptors and validated exports for RPCore and other consumers. EventCore is the common hub and persistence layer, not a replacement for each domain's rules.
+
+## 0.4.0
+
+Adds EventCore's administrator console, text commands for Warden role and
+runtime diagnostics, a read-only EventCore service/event-handler view, and a
+Warden-authorized bridge to existing Open77 admin commands. No role assignment
+or command authorization is moved out of Warden/Open77.
 
 ## 0.3.1
 

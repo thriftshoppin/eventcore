@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Added an EventCore-owned administrator console and Warden-gated text commands for opening it, listing global admins, inspecting player roles, and viewing runtime services and event handlers.
+- Added a player roster, quick-action bridge, and Warden-checked `admin.*` command console; Open77 rechecks each command at execution.
+- Added read-only event-handler diagnostics and the service directory to the admin console.
+- Kept Warden as the sole authority for assigning global roles.
+
 ## 0.3.1
 
 - Added trusted, read-only ACL role queries for player tools: `IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`.

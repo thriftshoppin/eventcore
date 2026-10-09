@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EventCore Admin</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="closed">
+  <main class="panel" role="dialog" aria-label="EventCore admin menu" aria-modal="false">
+    <header>
+      <div>
+        <div class="eyebrow">SERVER TOOLS</div>
+        <h1>Administration</h1>
+        <p id="status">Checking Warden access…</p>
+      </div>
+      <div class="header-actions">
+        <button id="refresh" type="button">Refresh</button>
+        <button id="close" class="close" type="button" aria-label="Close">×</button>
+      </div>
+    </header>
+    <section class="summary" aria-label="Server summary">
+      <article><span>ONLINE</span><strong id="online-count">—</strong></article>
+      <article><span>GLOBAL ADMINS</span><strong id="admin-count">—</strong></article>
+      <article><span>EVENTCORE</span><strong id="version">—</strong></article>
+      <article><span>SERVICES</span><strong id="service-count">—</strong></article>
+    </section>
+    <section class="content">
+      <div class="section-heading"><h2>Online players</h2><span id="updated"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>PLAYER</th><th>Warden roles</th><th>ACCESS</th><th>TOOLS</th></tr></thead>
+          <tbody id="players"><tr><td colspan="5" class="empty">Waiting for server data…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="toolbox" aria-label="Administrator tools">
+      <div class="section-heading"><h2>Quick tools</h2><span>Warden checks each command</span></div>
+      <div id="quick-tools" class="quick-tools"></div>
+      <form id="command-form" class="command-form">
+        <input id="command-name" type="text" maxlength="64" placeholder="admin.read.vehicles" aria-label="Admin command">
+        <input id="command-args" type="text" maxlength="800" placeholder='Arguments, quote text with "double quotes"' aria-label="Command arguments">
+        <button type="submit">Run command</button>
+      </form>
+      <div class="command-hint">EventCore requires global Warden admin; Open77 checks the command grant again.</div>
+      <div id="tool-result" role="status" aria-live="polite"></div>
+    </section>
+    <section class="runtime" aria-label="EventCore runtime">
+      <div class="runtime-column">
+        <div class="section-heading"><h2>Service directory</h2></div>
+        <div class="runtime-list" id="services"><span class="empty">Waiting for server data…</span></div>
+      </div>
+      <div class="runtime-column">
+        <div class="section-heading"><h2>Event handlers</h2></div>
+        <div class="runtime-list" id="event-handlers"><span class="empty">Waiting for server data…</span></div>
+      </div>
+    </section>
+    <section class="tool-output" aria-label="Admin tool output">
+      <div class="section-heading"><h2 id="tool-output-title">Command output</h2><span id="tool-output-channel"></span></div>
+      <pre id="tool-output">Run a read command to view its structured result.</pre>
+    </section>
+    <footer>
+      <span>Global roles are managed by Warden.</span>
+      <span>Commands: <code>/eventcore.admin</code> · <code>/eventcore.admins</code> · <code>/eventcore.roles &lt;id&gt;</code></span>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
