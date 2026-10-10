@@ -4,14 +4,14 @@ EventCore supplies a replaceable chat UI while Open77 remains responsible for co
 
 ## Install
 
-1. Install EventCore 0.6.5 or newer as a resource and keep it in the server's `resources.load` list.
-2. Remove `open77_chat` from `resources.load` after EventCore is installed. This stops the bundled chat UI and releases its T key binding. EventCore registers its own T binding.
+1. Install EventCore 0.6.6 or newer as a resource and keep it in the server's `resources.load` list.
+2. Keep `open77_chat` loaded. EventCore disables only its built-in presentation and T binding through the supported `setEnabled` export; the resource remains active as Open77's command/message transport. EventCore restores the built-in UI if it is stopped.
 3. Keep other resources and their command registrations enabled. EventCore sends slash commands through Open77's authenticated command dispatcher, which still enforces each `command.<name>` ACL.
 4. Restart the server and check the EventCore startup logs. In game, press **T** to open chat. A normal message is sent as chat; `/command arguments` runs a registered local or server command.
 
 The open chat prompt is `eventcore:`. It is green; typed text and message output are white. Messages have exactly one source label: player names for player chat, **Server** for server output, **EventCore** for EventCore system replies, and an optional resource-provided label for messages sent through the approved `SendChat` export. Open77's `chat:ready` and `chat:addSuggestions` events feed the slash-command suggestions; use **Tab** to complete a match and **Up/Down** to select one. Four recent messages fit beneath the input, and command errors remain visible after the chat closes. Press **Escape** or controller **B** to close chat without sending.
 
-Removing `open77_chat` replaces its input and presentation resource. It does not unregister commands from other resources. EventCore reads command suggestions from Open77 resources and does not take ownership of those commands or their permissions. Typed-command history is not persisted between sessions.
+EventCore replaces the built-in input and presentation while preserving the Open77 chat service that delivers command help, invalid-command feedback, server announcements, and suggestions. It does not unregister commands from other resources or take ownership of their permissions. Typed-command history is not persisted between sessions.
 
 ## Send messages from another resource
 

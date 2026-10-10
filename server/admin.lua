@@ -124,10 +124,22 @@ RegisterCommand("eventcore.events", function(source, _, raw)
     end
 end, true)
 
+RegisterCommand("eventcore.bridge", function(source, _, raw)
+    local allowed, idOrReason = requireAdmin(source)
+    if not allowed then return reply(source, raw, false, "EventCore admin access denied: " .. tostring(idOrReason)) end
+    local status = EventCore.Bridge.GetStatus()
+    reply(source, raw, true, ("EventCore bridge: callback %s; %d action(s); success logging %s")
+        :format(status.networkCallback, status.actionCount, status.debugLogging and "on" or "off"))
+    for _, action in ipairs(status.actions) do
+        reply(source, raw, true, ("%s — %s (%s)"):format(action.id, action.resource,
+            action.clientHandler and "client adapter enabled" or "server action"))
+    end
+end, true)
+
 RegisterCommand("eventcore.help", function(source, _, raw)
     local allowed, idOrReason = requireAdmin(source)
     if not allowed then return reply(source, raw, false, "EventCore admin access denied: " .. tostring(idOrReason)) end
-    reply(source, raw, true, "EventCore admin commands: /eventcore.admin, /eventcore.admins, /eventcore.roles <id>, /eventcore.services, /eventcore.events, /eventcore.help")
+    reply(source, raw, true, "EventCore admin commands: /eventcore.admin, /eventcore.admins, /eventcore.roles <id>, /eventcore.services, /eventcore.events, /eventcore.bridge, /eventcore.help")
 end, true)
 
 RegisterNetEvent("eventcore:admin:request", function(requestId)

@@ -41,7 +41,7 @@
       history.slice(-60).forEach(line => {
         if (!line || typeof line.text !== 'string') return;
         lines.push({
-          type: line.type === 'system' ? 'system' : 'player',
+          type: line.type === 'error' ? 'error' : line.type === 'system' ? 'system' : 'player',
           author: bounded(line.author, 48),
           text: bounded(line.text, 512),
         });
@@ -53,7 +53,7 @@
   function add(line) {
     if (!line || typeof line.text !== 'string') return;
     lines.push({
-      type: line.type === 'system' ? 'system' : 'player',
+      type: line.type === 'error' ? 'error' : line.type === 'system' ? 'system' : 'player',
       author: bounded(line.author, 48),
       text: bounded(line.text, 512),
     });

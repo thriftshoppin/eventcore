@@ -60,6 +60,23 @@ local function currentCaller()
     return name, generation
 end
 
+local function declaresEventCoreDependency(resourceName)
+    if not (Open77 and Open77.resource and type(Open77.resource.metadata) == "function") then
+        return false
+    end
+    local ok, dependencies = pcall(Open77.resource.metadata, resourceName, "dependencies")
+    if not ok or type(dependencies) ~= "table" then return false end
+    for _, dependency in pairs(dependencies) do
+        if type(dependency) == "string" then
+            local dependencyName = dependency:match("^%s*([^%s]+)")
+            if dependencyName == "eventcore" then return true end
+        elseif type(dependency) == "table" and dependency.name == "eventcore" then
+            return true
+        end
+    end
+    return false
+end
+
 local function pruneStale()
     if not (Open77 and Open77.resource and Open77.resource.generation) then return end
     for serviceId, entry in pairs(services) do
@@ -90,9 +107,13 @@ end
 function EventCore.Services.Register(definition)
     local resource, generation = currentCaller()
     if not resource then return false, "missing_export_caller" end
+    if not declaresEventCoreDependency(resource) then return false, "eventcore_dependency_required" end
     if type(definition) ~= "table" then return false, "invalid_definition" end
     if not validIdentifier(definition.id) then return false, "invalid_service_id" end
     if definition.id == CORE_SERVICE_ID then return false, "reserved_service_id" end
+    if definition.id:sub(1, #resource + 1) ~= (resource .. ".") then
+        return false, "service_id_not_owned"
+    end
     if not validVersion(definition.version) then return false, "invalid_service_version" end
     if type(definition.apiVersion) ~= "number" or definition.apiVersion < 1
         or definition.apiVersion % 1 ~= 0 then
@@ -130,10 +151,12 @@ end
 
 --- Remove a provider contract only when called by its owning resource.
 function EventCore.Services.Unregister(serviceId)
-    local resource = currentCaller()
+    local resource, generation = currentCaller()
     local entry = services[serviceId]
     if not entry then return true end
-    if not resource or entry.resource ~= resource then return false, "service_owner_mismatch" end
+    if not resource or entry.resource ~= resource or entry.generation ~= generation then
+        return false, "service_owner_mismatch"
+    end
     services[serviceId] = nil
     return true
 end
@@ -152,6 +175,7 @@ function EventCore.Services.List()
                 "IsAdmin", "GetPlayerRoles", "GetOnlineAdmins",
                 "OpenAdminPanel",
                 "RegisterService", "UnregisterService", "AllowClientEvent", "Emit", "EmitClient",
+                "RegisterBridgeAction", "UnregisterBridgeAction", "ListBridgeActions", "GetBridgeStatus", "CallBridgeClientAction",
                 "PublishClientState", "ClearClientState",
                 "BroadcastClient", "PersistEvent", "GetPersistedEvent", "FindPersistedEvents",
                 "PersistenceStatus", "ExposeEvent", "SavePlayerState", "LoadPlayerState",
@@ -161,7 +185,7 @@ function EventCore.Services.List()
                 "StorageListPlayer", "StorageTransaction", "SendChat",
             },
             events = {},
-            description = "Runtime services, chat, trusted player/scope context, and caller-scoped persistence fallback.",
+            description = "Runtime services, typed client bridge, chat, trusted player/scope context, and scoped persistence.",
         },
     }
     for _, entry in pairs(services) do result[#result + 1] = descriptorCopy(entry) end
@@ -180,7 +204,7 @@ function EventCore.GetRuntimeInfo()
     return {
         version = EventCore.VERSION,
         apiVersion = EventCore.API_VERSION,
-        capabilities = { "events", "service_catalog", "player_context", "player_scope", "persistence", "storage_api_v1", "client_state_feed_v1", "acl_role_read", "admin_console_v1", "chat_v1" },
+        capabilities = { "events", "service_catalog", "player_context", "player_scope", "persistence", "storage_api_v1", "client_state_feed_v1", "typed_client_bridge_v1", "typed_server_client_actions_v1", "acl_role_read", "admin_console_v1", "chat_v1" },
         services = EventCore.Services.List(),
     }
 end

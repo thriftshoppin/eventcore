@@ -13,10 +13,18 @@ the authority for global roles and per-command grants.
 - `/eventcore.services` prints the current EventCore service directory.
 - `/eventcore.events` prints registered EventCore event names and listener
   counts.
+- `/eventcore.bridge` reports callback readiness, registered bridge actions,
+  and whether success logging is enabled.
 - `/eventcore.help` lists the EventCore administrator commands.
 
-All five commands are registered as restricted Open77 commands and also check
+All commands are registered as restricted Open77 commands and also check
 the caller's effective Warden roles inside EventCore.
+
+For a test bench, set `EventCore.BridgeDebug = true` in
+`server/whitelist.lua` to log successful action registration and outcomes in
+the server console. Logs include only the event, resource, action ID, and
+session player ID; they never print client payloads. Keep this off on a busy
+server. Warnings for callback/provider failures remain available regardless.
 
 ## Panel actions
 

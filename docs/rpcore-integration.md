@@ -131,7 +131,7 @@ end)
 
 CreateThread(function()
     local pending, dispatchError = Open77.exports.call("eventcore", "RegisterService", {
-        id = "inventory",
+        id = "inventory_mod.inventory",
         version = "1.0.0",
         apiVersion = 1,
         methods = { "GetSnapshot" },
@@ -156,6 +156,12 @@ local snapshot, callError = pending:await()
 ```
 
 Provider services must validate every argument, use `GetInvokingResource()` for authorization, and never trust `source` to exist inside an export callback. EventCore automatically removes descriptors after a provider generation stops or reloads. A provider should re-register on its next start.
+
+Service IDs are owned namespaces: use `<resource_name>.<service_name>` (for
+example, `inventory_mod.inventory`). EventCore rejects IDs outside the real
+calling resource's prefix so one add-on cannot squat another add-on's catalog
+entry. The provider must also declare `dependency "eventcore >=0.7.0"` in its
+manifest before registration is accepted.
 
 ## What this release does not do yet
 

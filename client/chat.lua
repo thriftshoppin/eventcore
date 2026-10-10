@@ -6,6 +6,26 @@ local opened = false
 local history = {}
 local MAX_HISTORY = 60
 local lastSuggestionRequest = -1
+local nativeTemplates = {}
+
+local function setNativeChatEnabled(enabled)
+    if not (Open77 and Open77.exports and type(Open77.exports.call) == "function") then
+        return false, "Open77 chat export bridge is unavailable"
+    end
+    local ok, promise, reason = pcall(Open77.exports.call, "open77_chat", "setEnabled", enabled == true)
+    if not ok or not promise then return false, tostring(ok and reason or promise) end
+    local awaited, accepted, detail = pcall(function() return promise:await() end)
+    if not awaited or accepted == false then return false, tostring(awaited and detail or accepted) end
+    return true
+end
+
+local function synchronizeNativeChat(enabled)
+    CreateThread(function()
+        Wait(0)
+        local ok, reason = setNativeChatEnabled(enabled)
+        if not ok then print("[EventCore][chat] could not " .. (enabled and "restore" or "replace") .. " Open77 chat UI: " .. reason) end
+    end)
+end
 
 local function post(channel, payload)
     if page then page:send(channel, payload or {}) end
@@ -13,11 +33,11 @@ end
 
 local function remember(line)
     if type(line) ~= "table" or type(line.text) ~= "string" then return end
-    local systemLine = line.type == "system"
+    local lineType = line.type == "error" and "error" or (line.type == "system" and "system" or "player")
     local author = type(line.author) == "string" and line.author:sub(1, 48) or ""
-    if systemLine and author == "" then author = "EventCore" end
+    if lineType == "system" and author == "" then author = "EventCore" end
     history[#history + 1] = {
-        type = systemLine and "system" or "player",
+        type = lineType,
         author = author,
         text = line.text:sub(1, 512),
         at = type(line.at) == "number" and line.at or os.time(),
@@ -51,15 +71,24 @@ local function relayNativeMessage(message)
     if type(message) == "string" then message = { text = message } end
     if type(message) ~= "table" then return end
     local author = type(message.author) == "string" and message.author or ""
-    local text = type(message.text) == "string" and message.text or ""
+    local args = type(message.args) == "table" and message.args or {}
+    local text = type(message.text) == "string" and message.text
+        or (type(message.message) == "string" and message.message or "")
     if text == "" and type(message.args) == "table" then
-        author = author ~= "" and author or tostring(message.args[1] or "")
-        text = tostring(message.args[2] or "")
-        for index = 3, #message.args do text = text .. " " .. tostring(message.args[index]) end
+        local first = #args > 1 and 2 or 1
+        if author == "" and #args > 1 then author = tostring(args[1] or "") end
+        local parts = {}
+        for index = first, #args do parts[#parts + 1] = tostring(args[index] or "") end
+        text = table.concat(parts, " ")
+    end
+    local templateId = type(message.templateId) == "string" and message.templateId or nil
+    local template = templateId and nativeTemplates[templateId] or nil
+    if template then
+        text = template:gsub("{(%d+)}", function(index) return tostring(args[tonumber(index) + 1] or "") end)
     end
     if text == "" then return end
     if author == "" and (message.type == "system" or message.type == "server") then author = "Server" end
-    remember({ type = "system", author = author, text = text })
+    remember({ type = message.type == "error" and "error" or "system", author = author, text = text })
 end
 
 local function closeChat()
@@ -184,6 +213,9 @@ end
 
 RegisterNetEvent("eventcore:net:chat:line", remember)
 RegisterNetEvent("chat:addMessage", relayNativeMessage)
+RegisterNetEvent("chat:addTemplate", function(id, template)
+    if type(id) == "string" and type(template) == "string" then nativeTemplates[id] = template:sub(1, 1024) end
+end)
 RegisterNetEvent("chat:addSuggestion", function(command, help, parameters)
     post("eventcore:chat:suggestion", {
         command = tostring(command or ""), help = tostring(help or ""),
@@ -205,6 +237,7 @@ RegisterNetEvent("chat:clearSuggestions", function() post("eventcore:chat:clearS
 AddEventHandler("open77:pauseKey", closeChat)
 RegisterNetEvent("open77:command:result", function(raw, accepted, message)
     if type(message) ~= "string" then return end
+    if accepted == true and message:match("^queued by ") then return end
     local text = message
     if accepted == false and message == "unknown_command" then
         text = "Unknown command: /" .. tostring(raw or "") .. ". Type / to browse available commands."
@@ -213,18 +246,26 @@ RegisterNetEvent("open77:command:result", function(raw, accepted, message)
     elseif accepted == false and raw and raw ~= "" then
         text = tostring(raw) .. ": " .. message
     end
-    remember({ type = "system", author = "EventCore", text = text })
+    remember({ type = accepted == false and "error" or "system", author = "COMMAND", text = text })
 end)
 
 AddEventHandler("onClientResourceStart", function(name)
     if name ~= GetCurrentResourceName() then return end
     createPage()
     registerChatKey()
+    synchronizeNativeChat(false)
+end)
+
+AddEventHandler("onClientResourceStart", function(name)
+    if name == "open77_chat" then synchronizeNativeChat(false) end
 end)
 
 AddEventHandler("onClientResourceStop", function(name)
     if name ~= GetCurrentResourceName() then return end
     closeChat()
+    -- Restore the stock UI if EventCore is stopped or reloaded. TriggerEvent
+    -- is synchronous here, so the native input is available immediately.
+    TriggerEvent("chat:setEnabled", true)
     if page then page:destroy(); page = nil end
 end)
 

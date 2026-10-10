@@ -1,6 +1,13 @@
 # Changelog
 
 ## Unreleased
+- Added client bridge request IDs and bounded per-player replay protection so a retry with the same action and payload reuses the completed result instead of invoking the provider twice.
+- Added EventCore 0.7.0's paired typed bridge: explicit resource/action allowlists, Open77 callback transport in both directions, caller-derived provider ownership, payload/result caps, per-player rate limits, and structured action results.
+- Added Warden-gated `/eventcore.bridge` diagnostics plus opt-in, payload-free success logs for bridge registration and action outcomes (`EventCore.BridgeDebug` in `server/whitelist.lua`).
+- Hardened the provider catalog: services now require an EventCore manifest dependency and a resource-owned ID prefix, and only the same resource generation can unregister its descriptor.
+- Published a small client bridge library for adapters and documented HUDitor as a first-party client layer in the paired EventCore/RPCore stack.
+- Replaced only Open77's chat presentation while keeping its chat resource active for help text, command results, server output, and suggestions.
+- Preserved command error styling and message templates in EventCore's chat feed.
 - Added Open77 command suggestions and native server/resource message forwarding to the EventCore chat.
 - Tightened the top-left chat typography and layout to fit four recent messages below the input.
 - Documented EventCore's scoped-storage role in native game-map integrations: persist pin definitions while the game renders the map and blips.

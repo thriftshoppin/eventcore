@@ -9,3 +9,15 @@ EventCore.Whitelist = {
     ["rpcore"] = true,
     -- ["resource_folder_name"] = true,
 }
+
+-- Server resources allowed to register typed bridge actions in either
+-- direction. This is separate from storage access. Each action's provider
+-- still authorizes the player and validates domain-specific rules.
+EventCore.BridgeWhitelist = {
+    ["rpcore"] = true,
+    -- ["resource_folder_name"] = true,
+}
+
+-- Set true on a test bench to log successful bridge registrations and actions.
+-- Payload contents are never printed. Keep false on a busy/production server.
+EventCore.BridgeDebug = false

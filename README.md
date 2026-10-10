@@ -6,7 +6,7 @@ EventCore is the server-side runtime and service hub for Open77 roleplay resourc
 
 EventCore also owns the framework's administrator entry point. `/eventcore.admin`
 opens its administrator console; `/eventcore.admins`, `/eventcore.roles`,
-`/eventcore.services`, `/eventcore.events`, and `/eventcore.help` provide text access to Warden role,
+`/eventcore.services`, `/eventcore.events`, `/eventcore.bridge`, and `/eventcore.help` provide text access to Warden role,
 service, and event-handler diagnostics. The panel includes a player roster,
 authorized quick actions, a Warden-checked `admin.*` command console with
 structured tool output, the service directory, and registered event handlers.
@@ -15,7 +15,7 @@ Quick actions are limited to commands explicitly granted by Warden, and Open77's
 restricted command dispatcher checks that command grant again before execution.
 Warden remains the only authority that assigns global roles.
 
-EventCore also owns a skinnable in-game chat surface. It uses **T** to open, accepts normal chat and slash commands, and routes slash commands through Open77's existing command registry and ACL checks. To replace the bundled chat UI and release its T binding, remove `open77_chat` from `resources.load` after the EventCore chat is installed. Command handlers registered by other resources remain registered; only the old chat surface is replaced. See [`docs/chat.md`](docs/chat.md) for install details and the EventCore chat-send export.
+EventCore also owns a skinnable in-game chat surface. It uses **T** to open, accepts normal chat and slash commands, and routes slash commands through Open77's existing command registry and ACL checks. Keep `open77_chat` loaded: EventCore disables its bundled UI through the supported export while preserving Open77's command and server-message transport. Command handlers registered by other resources remain registered. See [`docs/chat.md`](docs/chat.md) for install details and the EventCore chat-send export.
 
 The admin surface is being migrated into EventCore in increments. The current
 panel fronts the existing Open77 restricted command handlers; gameplay rules and
@@ -24,6 +24,10 @@ See [`docs/admin-console.md`](docs/admin-console.md) for commands, panel actions
 and the authorization flow.
 
 Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. Related foundational RP services such as outfits/clothing bundles and owned vehicles can live behind shared EventCore contracts, while add-on resources publish versioned services and work directly with those owners when appropriate. EventCore is the compatibility and persistence fallback when no domain service fits. Its storage API gives each explicitly trusted resource a separate SQL-backed namespace; a mod cannot supply SQL, choose another resource's namespace, or directly access the database. This keeps mod-owned records separate instead of combining every mod's inventory or data into one list.
+
+The [RP server mod tools roadmap](docs/RP_SERVER_MOD_TOOLS_ROADMAP.md) is the step-by-step checklist for a complete roleplay server stack, including characters, custom clothing, inventory/economy, vehicles, apartments, jobs, factions/police, map/live events, client mods, testing, and release. The [stack architecture](docs/STACK_ARCHITECTURE.md) records the trust boundaries and shared protocol; both distinguish source code from features that still need live verification.
+
+EventCore 0.7.0 adds a paired typed bridge for client requests and opt-in server-directed client actions. A provider must declare an EventCore dependency, be explicitly listed in `server/whitelist.lua` under `EventCore.BridgeWhitelist`, and register named actions with bounded payloads. Open77 supplies the authenticated player ID; the action's owning server resource still validates ACL, gameplay conditions, and authoritative state. See [`docs/client-bridge.md`](docs/client-bridge.md). The bridge does not forward arbitrary console text, Lua, SQL, or code.
 
 ## 0.5.0
 
