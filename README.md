@@ -70,32 +70,58 @@ Do not nest one resource inside another (for example an `rpcore/` folder inside 
 
 Do not also load a separate respawn resource; Freeroam already handles respawn and the join spawn. `open77_freeroam` is a persistence add-on and is not needed for this pack.
 
-### Warden whitelisting
+### EventCore whitelisting
 
-Approve each resource's declared permissions in Warden before the first restart. The names below match each resource's `open77.lua`; approve the complete set for the features you are installing.
+EventCore has two layers of approval: Warden permissions in `eventcore/open77.lua`, and server-resource allowlists in `eventcore/server/whitelist.lua`. A resource that runs SQL through EventCore needs both the Warden `database.access` permission in its own manifest and an entry in `EventCore.Whitelist`.
 
-#### EventCore
+#### Storage and SQL resources
 
-| Permission | Used for |
-| --- | --- |
-| `network.events`, `local.events`, `input.actions` | Server/client events, pause/menu integration and chat input. |
-| `database.access` | Open77's server-side MySQL/MariaDB bridge. |
-| `players.read` | Connected-player state and presence. |
-| `acl.read` | Warden role checks for admin tools and trusted resource queries. |
+Add the exact resource folder name to `EventCore.Whitelist`:
 
-EventCore's default `server/whitelist.lua` already approves `rpcore` for scoped storage and typed bridge actions. Add another resource there only when you intentionally grant it those APIs. Warden still owns role assignment; EventCore never promotes players.
+```lua
+EventCore.Whitelist = {
+    ["rpcore"] = true,
+    ["your_sql_resource"] = true,
+}
+```
 
-#### RPCore
+This grants that resource its own scoped storage partition and allows its approved EventCore storage/chat-send calls. In the calling resource, declare the dependency and permission as well:
 
-Approve `network.events`, `input.actions`, `local.events`, `players.stats.read`, `players.life.read`, `player.weapons.read`, `players.read`, `player.aim.read`, `ui.vanilla.hud`, `ui.vanilla.map`, `map.read`, `map.control`, and `rtti.native`.
+```lua
+dependency "eventcore >=0.5.0"
+permissions { "database.access" }
+```
 
-`rtti.native` is required for the native HUD bars. RPCore still loads without it, but the native bars remain unavailable. The redscript client pack in `dist/rpcore-hud.zip` also needs `requiredMods.enabled`; approve its exact hash in Warden, or use the server's reviewed unsecured-mod policy.
+Do not add a resource to this list just because it is loaded. Add only resources that are trusted to use EventCore's persistence or approved chat-send exports.
 
-#### Freeroam
+#### Typed bridge providers
 
-Approve the permissions declared by the patched Freeroam resource: `camera.style`, `clipboard.write`, `acl.read`, `local.events`, `network.events`, `world.vehicles`, `world.props`, `world.effects`, `world.markers`, `world.npcs`, `world.safeareas`, `player.weapons.edit`, `database.access`, `vehicles.performance`, `input.actions`, `filesystem.read`, `filesystem.write`, `players.life.read`, `players.teleport`, `players.life.freeze`, `players.cyberware.read`, `players.dash.read`, `players.reflex.read`, `players.life.kill`, `players.life.revive`, `players.life.respawn`, `players.damage.read`, `players.damage.apply`, `players.stats.read`, `players.stats.apply`, `combat.config`, `player.travel`, `player.equipment.edit`, `player.weapons.read`, `vehicles.read`, `ui.vanilla.map`, `ui.vanilla.hud`, and `ui.nameplates`.
+`EventCore.BridgeWhitelist` is separate from storage approval. Add a provider here only when it registers typed client/server bridge actions:
 
-After approving permissions, restart the server and confirm Warden shows exactly one `eventcore`, one `rpcore`, and one `freeroam`. If a permission was reset by an Open77 update, approve it again before troubleshooting the resource.
+```lua
+EventCore.BridgeWhitelist = {
+    ["rpcore"] = true,
+    ["your_bridge_resource"] = true,
+}
+```
+
+The provider still validates Warden/Open77 ACL, gameplay conditions and every request field. Bridge approval does not grant SQL access.
+
+#### HUD callers
+
+`rpcore` is always allowed to receive HUD writes. Add another resource to `EventCore.HudCallers` only when it intentionally calls the `Hud*` exports:
+
+```lua
+EventCore.HudCallers = {
+    ["your_hud_resource"] = true,
+}
+```
+
+#### Read-only Warden role queries
+
+The read-only `IsAdmin`, `GetPlayerRoles` and `GetOnlineAdmins` exports are separately restricted in `eventcore/server/access.lua`. Add trusted server tools to `trustedAccessReaders` only when they need those queries. EventCore never assigns or promotes Warden roles.
+
+The EventCore manifest requests `network.events`, `local.events`, `input.actions`, `database.access`, `players.read` and `acl.read`. Approve those permissions in Warden, then restart the server. Re-approve them if an Open77 update resets the grants.
 
 ## Verify it works
 
