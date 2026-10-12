@@ -70,13 +70,13 @@ Do not nest one resource inside another (for example an `rpcore/` folder inside 
 
 Do not also load a separate respawn resource; Freeroam already handles respawn and the join spawn. `open77_freeroam` is a persistence add-on and is not needed for this pack.
 
-### EventCore whitelisting
+### EventCore whitelist (Lua)
 
-EventCore has two layers of approval: Warden permissions in `eventcore/open77.lua`, and server-resource allowlists in `eventcore/server/whitelist.lua`. A resource that runs SQL through EventCore needs both the Warden `database.access` permission in its own manifest and an entry in `EventCore.Whitelist`.
+EventCore's resource access is configured in the Lua file [`eventcore/server/whitelist.lua`](eventcore/server/whitelist.lua). Edit this file before starting the server; these are resource-folder names, not Warden role names.
 
-#### Storage and SQL resources
+#### SQL and scoped storage
 
-Add the exact resource folder name to `EventCore.Whitelist`:
+Add every trusted server resource that will use EventCore persistence to `EventCore.Whitelist`:
 
 ```lua
 EventCore.Whitelist = {
@@ -85,18 +85,17 @@ EventCore.Whitelist = {
 }
 ```
 
-This grants that resource its own scoped storage partition and allows its approved EventCore storage/chat-send calls. In the calling resource, declare the dependency and permission as well:
+This is the separate SQL/storage whitelist. It gives each approved resource its own scoped storage partition and allows its approved EventCore storage and chat-send exports. Do not add a resource just because it is loaded; add only resources that should be allowed to use those APIs.
+
+The EventCore resource itself declares `database.access` in `eventcore/open77.lua`, so the Warden permission belongs to EventCore. The calling resource must declare its EventCore dependency:
 
 ```lua
 dependency "eventcore >=0.5.0"
-permissions { "database.access" }
 ```
-
-Do not add a resource to this list just because it is loaded. Add only resources that are trusted to use EventCore's persistence or approved chat-send exports.
 
 #### Typed bridge providers
 
-`EventCore.BridgeWhitelist` is separate from storage approval. Add a provider here only when it registers typed client/server bridge actions:
+`EventCore.BridgeWhitelist` is a separate Lua table. Add a resource here only when it registers typed client/server bridge actions:
 
 ```lua
 EventCore.BridgeWhitelist = {
@@ -105,7 +104,7 @@ EventCore.BridgeWhitelist = {
 }
 ```
 
-The provider still validates Warden/Open77 ACL, gameplay conditions and every request field. Bridge approval does not grant SQL access.
+Bridge approval does not grant SQL/storage access. The provider still validates Warden/Open77 ACL, gameplay conditions and every request field.
 
 #### HUD callers
 
@@ -117,11 +116,7 @@ EventCore.HudCallers = {
 }
 ```
 
-#### Read-only Warden role queries
-
-The read-only `IsAdmin`, `GetPlayerRoles` and `GetOnlineAdmins` exports are separately restricted in `eventcore/server/access.lua`. Add trusted server tools to `trustedAccessReaders` only when they need those queries. EventCore never assigns or promotes Warden roles.
-
-The EventCore manifest requests `network.events`, `local.events`, `input.actions`, `database.access`, `players.read` and `acl.read`. Approve those permissions in Warden, then restart the server. Re-approve them if an Open77 update resets the grants.
+The remaining Warden permissions requested by EventCore are `network.events`, `local.events`, `input.actions`, `players.read` and `acl.read`. Approve those manifest permissions in Warden separately from the Lua allowlists.
 
 ## Verify it works
 
