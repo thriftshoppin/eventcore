@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- Docs: recorded the licensing plan. All rights reserved while in development; MIT from the full release onward. `LICENSE` is unchanged.
+- Docs: clarified EventCore's All Rights Reserved terms and added the valid-game-ownership and no-resale notice.
 - Docs: refreshed `AGENTS.md` and `docs/IMPLEMENTATION_STATUS.md` after the 2026-10-11 in-game test. Removed the outdated 0.6.5/0.3.3 test-bench diagnosis, "uncommitted" and "not deployed" notes, and the stale test-server path.
 - Docs: `open77_chat` must be listed in `resources.load` (the manifest does not enforce it); documented the symptom when it is missing.
 - Docs: documented where command output appears (chat vs client log vs server console) and that a nested `rpcore/` folder must not exist inside the EventCore folder.

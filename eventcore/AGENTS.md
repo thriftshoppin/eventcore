@@ -32,4 +32,4 @@ Last verified: 2026-10-11, after an in-game test by the operator. Treat this fil
 
 - Repository: `thriftshoppin/eventcore`; this resource lives in the `eventcore/` sibling folder.
 - The operator makes the git commits. Do not commit, push, or deploy.
-- **Licensing is intentional and staged.** While the software is in development, `LICENSE` is an all-rights-reserved notice (Workshop install and run only). The project is set to become MIT-licensed at the full release version and stay MIT for the rest of its lifecycle. Do not edit or replace `LICENSE`, add MIT text or headers, or change license wording in the README before the operator announces the full release. Earlier handoff text that said "do not add a license" is superseded by this entry.
+- **Licensing:** `LICENSE` is All Rights Reserved; permission is limited to Workshop download, installation, and use. EventCore is not open source. Do not change these terms or grant additional permissions unless the operator explicitly directs it.

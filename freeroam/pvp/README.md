@@ -1,5 +1,7 @@
 # Freeroam PvP activity
 
+<u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to download and use these modifications.**</u> This resource and its bundled game-derived graphics are not open source and may not be resold or redistributed. Follow CD PROJEKT RED's applicable terms; this notice does not grant rights to the game's content.
+
 Freeroam 0.7.0 integrates the existing Kabuki FFA and elimination-arena engine in the
 same Lua VM as Race and the sandbox. The standalone Deathmatch resources are unchanged;
 their scripts must not be started alongside this gamemode.

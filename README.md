@@ -9,6 +9,8 @@ This repository packages two Open77 server resources that are meant to run toget
 
 RPCore is a separate repository. It is not part of this pack.
 
+<u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to download and use these modifications.**</u> This resource pack and its bundled game-derived graphics are not open source and may not be resold or redistributed. Follow CD PROJEKT RED's applicable terms; this notice does not grant rights to Cyberpunk 2077, Phantom Liberty, or their assets.
+
 > **Status: in development.** The operator tested this stack in game on 2026-10-11 and reported only the [known issues](#known-issues) below. Expect rough edges and breaking changes before the full release.
 
 ## What each resource does
@@ -168,4 +170,4 @@ Current state, server requirements and known issues are kept in [`eventcore/AGEN
 
 ## License
 
-EventCore is all rights reserved while it is in development, and it is planned to move to the MIT License at its full release. See [`eventcore/LICENSE`](eventcore/LICENSE). This does not change the terms of any other resource in this repository.
+EventCore is All Rights Reserved and is not an open-source release. Permission is limited to downloading, installing, and running EventCore through the OPEN//77 Workshop as described in [`eventcore/LICENSE`](eventcore/LICENSE). You may not resell or redistribute the code or bundled game-derived graphics. This does not change the terms of other resources in this repository.

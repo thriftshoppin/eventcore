@@ -1,5 +1,7 @@
 # Freeroam / Race
 
+<u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to download and use these modifications.**</u> This resource and its bundled game-derived graphics are not open source and may not be resold or redistributed. Follow CD PROJEKT RED's applicable terms; this notice does not grant rights to the game's content.
+
 Server-authoritative N-player street racing with live course voting, vehicle grids, personal checkpoint zones, live ranking,
 GPS/HUD guidance, finish windows, and an ACL-gated in-game course creator.
 

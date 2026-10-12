@@ -1,6 +1,6 @@
 # EventCore
 
-EventCore is intended to remain open source and free for anyone to use and modify. It is under development; publication terms and license will be stated with the public release.
+<u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to download and use these modifications.**</u> EventCore is All Rights Reserved, not open source, and may not be resold or redistributed. Follow CD PROJEKT RED's applicable terms; this notice does not grant rights to the game's content or graphics.
 
 EventCore is the server-side runtime and service hub for Open77 roleplay resources. Its intended relationship with RPCore is straightforward: EventCore provides versioned services, trusted player/session context, events, scoped observer information, and durable server storage; RPCore consumes those contracts and turns approved information into an immersive HUD and player-facing tools.
 
@@ -127,4 +127,4 @@ The `0.3.1` archive includes read-only ACL role queries and remains separate fro
 
 For legacy adapters, see [`docs/legacy-compatibility.md`](docs/legacy-compatibility.md). EventCore does not patch RED4ext, Open77 binaries, or third-party native plugins. The planned custom-clothing boundary and stable outfit-code rules are in [`docs/server-managed-clothing.md`](docs/server-managed-clothing.md).
 
-EventCore is released as All Rights Reserved. Permission is granted to download, install, and run this release on OPEN//77 servers through the OPEN//77 Workshop. Modification, redistribution, and derivative works are not permitted. This applies while the software is in development; the project is planned to move to the MIT License at its full release.
+EventCore is All Rights Reserved. Permission is granted to download, install, and run this release on OPEN//77 servers through the OPEN//77 Workshop. Modification, resale, redistribution, and derivative works are not permitted. You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to use this modification. This does not grant rights to CD PROJEKT RED's game content or graphics; follow the applicable game and mod terms.
