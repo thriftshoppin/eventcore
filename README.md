@@ -70,6 +70,33 @@ Do not nest one resource inside another (for example an `rpcore/` folder inside 
 
 Do not also load a separate respawn resource; Freeroam already handles respawn and the join spawn. `open77_freeroam` is a persistence add-on and is not needed for this pack.
 
+### Warden whitelisting
+
+Approve each resource's declared permissions in Warden before the first restart. The names below match each resource's `open77.lua`; approve the complete set for the features you are installing.
+
+#### EventCore
+
+| Permission | Used for |
+| --- | --- |
+| `network.events`, `local.events`, `input.actions` | Server/client events, pause/menu integration and chat input. |
+| `database.access` | Open77's server-side MySQL/MariaDB bridge. |
+| `players.read` | Connected-player state and presence. |
+| `acl.read` | Warden role checks for admin tools and trusted resource queries. |
+
+EventCore's default `server/whitelist.lua` already approves `rpcore` for scoped storage and typed bridge actions. Add another resource there only when you intentionally grant it those APIs. Warden still owns role assignment; EventCore never promotes players.
+
+#### RPCore
+
+Approve `network.events`, `input.actions`, `local.events`, `players.stats.read`, `players.life.read`, `player.weapons.read`, `players.read`, `player.aim.read`, `ui.vanilla.hud`, `ui.vanilla.map`, `map.read`, `map.control`, and `rtti.native`.
+
+`rtti.native` is required for the native HUD bars. RPCore still loads without it, but the native bars remain unavailable. The redscript client pack in `dist/rpcore-hud.zip` also needs `requiredMods.enabled`; approve its exact hash in Warden, or use the server's reviewed unsecured-mod policy.
+
+#### Freeroam
+
+Approve the permissions declared by the patched Freeroam resource: `camera.style`, `clipboard.write`, `acl.read`, `local.events`, `network.events`, `world.vehicles`, `world.props`, `world.effects`, `world.markers`, `world.npcs`, `world.safeareas`, `player.weapons.edit`, `database.access`, `vehicles.performance`, `input.actions`, `filesystem.read`, `filesystem.write`, `players.life.read`, `players.teleport`, `players.life.freeze`, `players.cyberware.read`, `players.dash.read`, `players.reflex.read`, `players.life.kill`, `players.life.revive`, `players.life.respawn`, `players.damage.read`, `players.damage.apply`, `players.stats.read`, `players.stats.apply`, `combat.config`, `player.travel`, `player.equipment.edit`, `player.weapons.read`, `vehicles.read`, `ui.vanilla.map`, `ui.vanilla.hud`, and `ui.nameplates`.
+
+After approving permissions, restart the server and confirm Warden shows exactly one `eventcore`, one `rpcore`, and one `freeroam`. If a permission was reset by an Open77 update, approve it again before troubleshooting the resource.
+
 ## Verify it works
 
 - Client log shows `[EventCore][chat] bound to T`. If it shows `could not replace Open77 chat UI`, `open77_chat` is not loaded.
