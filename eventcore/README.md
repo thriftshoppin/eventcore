@@ -2,6 +2,8 @@
 
 <u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to run or use this software with the game.**</u> EventCore's own code is released under the **MIT License** (see [`LICENSE`](LICENSE)). This repository does not ship CD PROJEKT RED game assets or proprietary scripts. CD PROJEKT RED's terms, REDmod EULA, and Fan Content Guidelines still apply to any use involving the game.
 
+**Version 0.8.0** — client HUD is the **sibling** package `eventcore-hud/` (zip for Warden), not nested under this resource.
+
 **Version 0.8.0** — server runtime + **native inkWidget client pipeline** + **EventView**. No web vitals UI is shipped as the required client mod.
 
 EventCore is the server-side runtime and service hub for Open77 roleplay resources. It provides versioned services, trusted player/session context, events, scoped observer information, durable server storage, administrator tools, chat, a native inkWidget HUD host, and EventView (LTE schedules and per-player missions).
@@ -18,8 +20,8 @@ EventCore ships a **required client mod** that hosts generic bars on the game's 
 
 | Path | Role |
 |------|------|
-| `dist/eventcore-hud.zip` | Launcher-delivered required mod |
-| `dist/eventcore-hud.zip.sha256` | Warden review hash |
+| `eventcore-hud/` (sibling; zip for Warden) | Launcher-delivered required mod |
+| `eventcore-hud/ (sibling directory, zip for Warden).sha256` | Warden review hash |
 | `client-mod/r6/scripts/EventCoreHud/*.reds` | Source (config, events, system, widgets, controller) |
 
 **Pipeline**
@@ -34,7 +36,7 @@ See [`docs/client-inkwidget-pipeline.md`](docs/client-inkwidget-pipeline.md).
 `open77.lua` declares:
 
 ```text
-preload_mod "dist/eventcore-hud.zip"
+Warden required mod: sibling package `eventcore-hud/` (zip for Warden)
 ```
 
 Enable required mods in Warden and review the SHA-256 (or use `requiredMods.unsecured` only for private LAN tests).
@@ -114,7 +116,7 @@ See [`docs/rpcore-integration.md`](docs/rpcore-integration.md) and [`docs/persis
 1. Place this resource at `resources/eventcore/` (contents of the `eventcore/` folder in the release archive).
 2. Load **eventcore** before optional consumers (e.g. rpcore, freeroam).
 3. Ensure MariaDB / `OP77_DATABASE_CONNECTION` is configured if you use persistence.
-4. In Warden: grant EventCore permissions from `open77.lua`, enable required mods, review `dist/eventcore-hud.zip` hash.
+4. In Warden: grant EventCore permissions from `open77.lua`, enable required mods, review `eventcore-hud/` (sibling; zip for Warden) hash.
 5. Restart the server.
 
 Client packages are installed by the official OPEN//77 launcher from the server's required-mod list. Do not nest a second `rpcore/` folder inside EventCore.

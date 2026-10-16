@@ -27,9 +27,11 @@ client_script "client/native_hud.lua"
 client_script "client/widgets.lua"
 client_script "client/eventview.lua"
 client_script "client/admin.lua"
--- Client inkWidget HUD host only (no web vitals UI).
-preload_mod "dist/eventcore-hud.zip"
-
 web_files { "web/admin/**", "web/chat/**" }
 files { "client/modules/bridge.lua" }
 permissions { "network.events", "local.events", "input.actions", "database.access", "players.read", "acl.read" }
+
+-- Client HUD is a SEPARATE Warden required mod: sibling folder eventcore-hud/
+-- Zip eventcore-hud/ (archive root must contain r6/) and register that package in Warden.
+-- Do not nest the client mod inside this server resource.
+
