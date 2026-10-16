@@ -1,4 +1,4 @@
-# EventCore 0.7.0 checkpoint
+# EventCore checkpoint (0.8.0 code; last in-game test was 0.7.0)
 
 ## In-game test — 2026-10-11
 
@@ -73,4 +73,4 @@
 
 ## Release preservation
 
-The resource manifest version is 0.7.0. The operator tested chat and the HUD controller in game on 2026-10-11 and reported only the known issues above. The repository remote is `origin` (`thriftshoppin/eventcore`); the operator makes the commits.
+The resource manifest version is 0.8.0 (0.8.0 additions are untested in game); the in-game test below was of 0.7.0. The operator tested chat and the HUD controller in game on 2026-10-11 and reported only the known issues above. The repository remote is `origin` (`thriftshoppin/eventcore`); the operator makes the commits.

@@ -58,4 +58,17 @@ tr.admin td:nth-child(4) { color:#88d2ac; }
 .tool-output pre { max-height:210px; overflow:auto; margin:0; padding:10px 12px; border:1px solid #29343d; border-radius:4px; background:#10171c; color:#c6d4dc; font:11px/1.5 Consolas,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
 footer { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 18px; padding:12px 24px; border-top:1px solid #29343d; color:#91a1aa; font-size:10px; }
 code { color:#c3d4dd; font-family:Consolas,monospace; }
+.bench { padding:4px 24px 16px; }
+.bench-controls { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:7px; }
+.bench select, .bench input { border:1px solid #43535e; border-radius:4px; padding:5px 8px; background:#10171c; color:#eef4f7; font:12px Consolas,monospace; }
+.bench input { flex:1; min-width:140px; }
+#hud-list { width:100%; margin-bottom:4px; }
+#hud-sched { width:100%; resize:vertical; border:1px solid #43535e; border-radius:4px; padding:6px 9px; background:#10171c; color:#eef4f7; font:12px Consolas,monospace; }
+.loops { color:#93a8b4; font-size:11px; display:flex; align-items:center; gap:5px; }
+.loops input { width:56px; flex:none; min-width:0; }
+.bench .quick-tools { margin:6px 0 8px; }
+.bench .quick-tools button { padding:5px 8px; font-size:11px; }
+#hud-log td { font:11px Consolas,monospace; overflow-wrap:anywhere; }
+#hud-log tr.ok td:nth-child(6) { color:#88d2ac; }
+#hud-log tr.bad td:nth-child(6) { color:#ffb4a8; }
 @media(max-width:620px) { .panel { width:calc(100vw - 18px); max-height:calc(100vh - 18px); } header,.content,.toolbox { padding-left:14px; padding-right:14px; } .runtime,.tool-output { grid-template-columns:1fr; padding-left:14px; padding-right:14px; } .summary { grid-template-columns:repeat(2,1fr); } footer { padding-inline:14px; } .tools { min-width:0; } }

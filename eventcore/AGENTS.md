@@ -4,9 +4,10 @@ Last verified: 2026-10-11, after an in-game test by the operator. Treat this fil
 
 ## Current state
 
-- EventCore 0.7.0 includes a paired typed bridge (`server/bridge.lua`, `client/bridge_runtime.lua`) backed by Open77's namespaced authenticated callbacks. Providers must be EventCore dependencies and explicitly listed in `EventCore.BridgeWhitelist`; EventCore derives provider identity/generation from export context, caps JSON payloads/results, rate-limits per player/action, and dispatches only named provider exports. Provider handlers still own gameplay authorization and validation.
+- EventCore 0.8.0 includes a paired typed bridge (`server/bridge.lua`, `client/bridge_runtime.lua`) backed by Open77's namespaced authenticated callbacks. Providers must be EventCore dependencies and explicitly listed in `EventCore.BridgeWhitelist`; EventCore derives provider identity/generation from export context, caps JSON payloads/results, rate-limits per player/action, and dispatches only named provider exports. Provider handlers still own gameplay authorization and validation.
 - Client resources can import `@eventcore/client.modules.bridge` for client requests and local handler registration. HUDitor CET/REDscript-to-Open77 IPC is unproven and not implemented. Read `docs/client-bridge.md` and `docs/STACK_ARCHITECTURE.md` for the contract.
 - `server/hud.lua` is EventCore's controller for the RPCore HUD. RPCore only accepts HUD writes from EventCore. See `CHANGELOG.md` for the exports and the `/eventcore.hud.*` test commands.
+- 0.8.0 adds, alongside `server/hud.lua` (RPCore driver, unchanged): `client/native_hud.lua` (callers for every ink layer/widget/controller), `server/hud_bench.lua` (test bench, schedules, event log), `server/widgets.lua` + `client/widgets.lua` (custom ink-widget bridge) and the generated `shared/native_registry.lua`. This is work in progress and is kept deliberately in case Open77 or the game changes; see `docs/native-hud.md`.
 - Chat: EventCore replaces only Open77's chat presentation and T binding through the `open77_chat` `setEnabled` export. `open77_chat` stays active as the command/message transport. Chat lines keep one source label (player name, `Server`, `EventCore`, or an approved resource label). The green `eventcore:` text is the input prompt, not a message prefix. Escape arrives as `open77:pauseKey` (declared through `local.events`); controller B also closes chat.
 
 ## Server requirements (confirmed against a real `server.jsonc`)
@@ -32,4 +33,4 @@ Last verified: 2026-10-11, after an in-game test by the operator. Treat this fil
 
 - Repository: `thriftshoppin/eventcore`; this resource lives in the `eventcore/` sibling folder.
 - The operator makes the git commits. Do not commit, push, or deploy.
-- **Licensing:** `LICENSE` is All Rights Reserved; permission is limited to Workshop download, installation, and use. EventCore is not open source. Do not change these terms or grant additional permissions unless the operator explicitly directs it.
+- **Licensing:** `LICENSE` is MIT for EventCore's own code. End users must own Cyberpunk 2077 and Phantom Liberty to run the mod with the game. Do not add CDPR game assets or proprietary scripts to this repository.

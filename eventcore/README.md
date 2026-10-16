@@ -1,130 +1,152 @@
 # EventCore
 
-<u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to download and use these modifications.**</u> EventCore is All Rights Reserved, not open source, and may not be resold or redistributed. Follow CD PROJEKT RED's applicable terms; this notice does not grant rights to the game's content or graphics.
+<u>**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to run or use this software with the game.**</u> EventCore's own code is released under the **MIT License** (see [`LICENSE`](LICENSE)). This repository does not ship CD PROJEKT RED game assets or proprietary scripts. CD PROJEKT RED's terms, REDmod EULA, and Fan Content Guidelines still apply to any use involving the game.
 
-EventCore is the server-side runtime and service hub for Open77 roleplay resources. Its intended relationship with RPCore is straightforward: EventCore provides versioned services, trusted player/session context, events, scoped observer information, and durable server storage; RPCore consumes those contracts and turns approved information into an immersive HUD and player-facing tools.
+**Version 0.8.0** — server runtime + **native inkWidget client pipeline** + **EventView**. No web vitals UI is shipped as the required client mod.
 
-EventCore also owns the framework's administrator entry point. `/eventcore.admin`
-opens its administrator console; `/eventcore.admins`, `/eventcore.roles`,
-`/eventcore.services`, `/eventcore.events`, `/eventcore.bridge`, and `/eventcore.help` provide text access to Warden role,
-service, and event-handler diagnostics. The panel includes a player roster,
-authorized quick actions, a Warden-checked `admin.*` command console with
-structured tool output, the service directory, and registered event handlers.
-Every EventCore entry checks Warden for the reserved `admin` or `owner` role.
-Quick actions are limited to commands explicitly granted by Warden, and Open77's
-restricted command dispatcher checks that command grant again before execution.
-Warden remains the only authority that assigns global roles.
+EventCore is the server-side runtime and service hub for Open77 roleplay resources. It provides versioned services, trusted player/session context, events, scoped observer information, durable server storage, administrator tools, chat, a native inkWidget HUD host, and EventView (LTE schedules and per-player missions).
 
-EventCore also owns a skinnable in-game chat surface. It uses **T** to open, accepts normal chat and slash commands, and routes slash commands through Open77's existing command registry and ACL checks. Keep `open77_chat` loaded: EventCore disables its bundled UI through the supported export while preserving Open77's command and server-message transport. Command handlers registered by other resources remain registered. See [`docs/chat.md`](docs/chat.md) for install details and the EventCore chat-send export.
+The optional **RPCore** server resource may still consume EventCore contracts for a fuller RP presentation layer. It is **not required** to run EventCore. Missing RPCore produces a single quiet log line; set `EventCore.HudConfig.warnIfRpcoreMissing = true` only if you want repeated warnings.
 
-The admin surface is being migrated into EventCore in increments. The current
-panel fronts the existing Open77 restricted command handlers; gameplay rules and
-the command implementations remain in their owning resources until migrated.
-See [`docs/admin-console.md`](docs/admin-console.md) for commands, panel actions,
-and the authorization flow.
+---
 
-Gameplay resources remain authoritative for their own domains. Inventory decides what a player owns, clothing decides which outfits are valid, and mission resources decide objective results. Related foundational RP services such as outfits/clothing bundles and owned vehicles can live behind shared EventCore contracts, while add-on resources publish versioned services and work directly with those owners when appropriate. EventCore is the compatibility and persistence fallback when no domain service fits. Its storage API gives each explicitly trusted resource a separate SQL-backed namespace; a mod cannot supply SQL, choose another resource's namespace, or directly access the database. This keeps mod-owned records separate instead of combining every mod's inventory or data into one list.
+## What 0.8.0 adds
 
-The [RP server mod tools roadmap](docs/RP_SERVER_MOD_TOOLS_ROADMAP.md) is the step-by-step checklist for a complete roleplay server stack, including characters, custom clothing, inventory/economy, vehicles, apartments, jobs, factions/police, map/live events, client mods, testing, and release. The [stack architecture](docs/STACK_ARCHITECTURE.md) records the trust boundaries and shared protocol; both distinguish source code from features that still need live verification.
+### Native inkWidget client pipeline
 
-EventCore 0.7.0 adds a paired typed bridge for client requests and opt-in server-directed client actions. A provider must declare an EventCore dependency, be explicitly listed in `server/whitelist.lua` under `EventCore.BridgeWhitelist`, and register named actions with bounded payloads. Open77 supplies the authenticated player ID; the action's owning server resource still validates ACL, gameplay conditions, and authoritative state. See [`docs/client-bridge.md`](docs/client-bridge.md). The bridge does not forward arbitrary console text, Lua, SQL, or code.
+EventCore ships a **required client mod** that hosts generic bars on the game's own HUD (`inkHUDLayer` / `healthbarWidgetGameController`). There is no packaged web vitals HTML/JS.
 
-## 0.5.0
+| Path | Role |
+|------|------|
+| `dist/eventcore-hud.zip` | Launcher-delivered required mod |
+| `dist/eventcore-hud.zip.sha256` | Warden review hash |
+| `client-mod/r6/scripts/EventCoreHud/*.reds` | Source (config, events, system, widgets, controller) |
 
-Adds a structured persistence gateway for trusted resources, with resource-private
-and per-player storage, bounded atomic batches, and server-derived ownership.
-Consumers use EventCore exports instead of database credentials or raw SQL.
-See [`docs/persistence.md`](docs/persistence.md) for trust configuration and
-the storage contract.
+**Pipeline**
 
-## 0.6.0
+1. Server / Lua / RTTI writes bar state only (`EventCoreHudDefineBar`, `EventCoreHudSetBar`, `EventCoreHudRemoveBar`, `EventCoreHudClear`).
+2. `EventCoreHudSystem` stores definitions and values with revision counters.
+3. A pump on `healthbarWidgetGameController` applies state on the **UI frame**.
+4. Spawn ladder: `SpawnFromLocal` → `SpawnFromExternal` → procedural ink canvas.
 
-Adds the EventCore chat interface and bounded server message relay. Normal
-messages are server-validated and broadcast to EventCore clients; slash
-commands continue through Open77's authenticated command dispatcher and ACL.
-Approved resources can publish their own system/player chat lines through the
-`SendChat` export.
+See [`docs/client-inkwidget-pipeline.md`](docs/client-inkwidget-pipeline.md).
 
-## 0.4.0
+`open77.lua` declares:
 
-Adds EventCore's administrator console, text commands for Warden role and
-runtime diagnostics, a read-only EventCore service/event-handler view, and a
-Warden-authorized bridge to existing Open77 admin commands. No role assignment
-or command authorization is moved out of Warden/Open77.
-
-## 0.3.1
-
-Adds read-only access queries backed by Open77's effective ACL. Trusted server
-tools can ask whether a connected player holds the reserved `admin` or `owner`
-role, read that player's role labels, or list connected global admins. Warden
-remains the authority for role assignment; EventCore never grants admin rights.
-EventCore declares the `acl.read` capability in its resource manifest. Allowlist each server tool in `server/access.lua` before it can use these exports.
-
-## 0.3.0-beta.2
-
-Adds EventCore's versioned client-state feed. Trusted server resources publish
-client-safe snapshots (or clear a channel) through EventCore; clients receive
-ordered `state:update` packets. EventCore transports these views but does not
-become the authoritative owner of character, health, needs, mission, or other
-gameplay state.
-
-See [`docs/rpcore-integration.md`](docs/rpcore-integration.md) for the feed
-contract and server/client integration example.
-
-## 0.3.0-beta.1
-
-This release prepares that architecture with:
-
-- A server-side versioned service directory. Providers register serializable descriptors; consumers discover the provider resource and advertised methods/events.
-- Trusted player-context reads using Open77's verified identity and latest server position snapshot.
-- Native observer-scope reads so RPCore can target presentation updates to nearby/current viewers instead of broadcasting another player's outfit across town.
-- Existing event dispatch, explicit client-event allowlisting, selected server event notifications, and server-only SQL persistence.
-- Open77-correct asynchronous cross-resource examples. Function callbacks are not passed between isolated resource VMs.
-
-This is an experimental foundation. EventCore transports versioned client-safe snapshots published by trusted resources, but does not implement inventory/clothing/mission providers, replace Open77's scheduler/resource lifecycle, or automatically capture state owned by another resource. The implementation status and staged roadmap are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) and [`docs/RPCORE_PREPARATION_PLAN.md`](docs/RPCORE_PREPARATION_PLAN.md).
-
-Release-by-release changes are listed in [`CHANGELOG.md`](CHANGELOG.md).
-
-## Integration
-
-Server consumers call EventCore and provider exports through `Open77.exports.call` from a managed coroutine. The caller must validate the returned values, and a provider must authorize each caller with `GetInvokingResource()` and validate every argument. Open77 does not pass a network player's `source` into an export call; pass the player ID explicitly after resolving it from a trusted server event.
-
-```lua
-CreateThread(function()
-    local pending, reason = Open77.exports.call("eventcore", "GetPlayerContext", playerId)
-    if not pending then
-        Open77.log.warn("EventCore unavailable: " .. tostring(reason))
-        return
-    end
-    local context, callError = pending:await()
-    if not context then
-        Open77.log.warn("Player context unavailable: " .. tostring(callError))
-        return
-    end
-    -- Build a client-safe view; never forward private identity fields to a HUD.
-end)
+```text
+preload_mod "dist/eventcore-hud.zip"
 ```
 
-See [`docs/rpcore-integration.md`](docs/rpcore-integration.md) for service registration, player context, scope-aware presentation, and the RPCore contract. See [`docs/persistence.md`](docs/persistence.md) for database setup and the trusted server state APIs.
+Enable required mods in Warden and review the SHA-256 (or use `requiredMods.unsecured` only for private LAN tests).
+
+Vitals seeding is **off** by default (`EventCore.HudConfig.seedDefaults = false`). EventCore does not auto-push hunger / thirst / psychosis into a web UI.
+
+### EventView
+
+Operational panel and commands for **limited-time events** and **per-player missions**.
+
+**Target tokens**
+
+| Token | Meaning |
+|-------|---------|
+| `12` or `player:12` | One player |
+| `nearest` | Nearest to the operator |
+| `all` | Every online player |
+| `group:<role>` | Online players with that Warden role |
+
+**Commands**
+
+```text
+/eventcore.eventview.schedule <target> <loops> [label] ...
+/eventcore.eventview.cancel [scheduleId]
+/eventcore.eventview.targets <target>
+/eventcore.eventview.mission <target> set|clear|list [missionId] ...
+/eventcore.eventview.log [n]
+```
+
+Trusted mods write missions via exports:
+
+```lua
+exports.eventcore:EventViewMissionSet(playerId, "quest.intro", { title = "...", status = "active" })
+exports.eventcore:EventViewMissionClear(playerId, "quest.intro")
+```
+
+Admin panel: `/eventcore.admin` → **EventView** section.  
+Access: global `admin` / `owner`, or optional role `eventview` (`EventCore.EventViewConfig.operatorRole`).
+
+See [`docs/eventview.md`](docs/eventview.md).
+
+### HUD test bench (native discovery)
+
+Global-admin tools to probe layers, controllers, and widgets through the host API, including schedules and a live result viewer. See [`docs/native-hud.md`](docs/native-hud.md).
+
+---
+
+## Administrator console
+
+`/eventcore.admin` opens the administrator console. Text commands:
+
+- `/eventcore.admins`
+- `/eventcore.roles`
+- `/eventcore.services`
+- `/eventcore.events`
+- `/eventcore.bridge`
+- `/eventcore.help`
+
+The panel includes a player roster, authorized quick actions, a Warden-checked `admin.*` command console, the service directory, registered event handlers, the HUD test bench, and EventView.
+
+Every EventCore admin entry checks Warden for the reserved `admin` or `owner` role. Quick actions are limited to commands Warden grants; Open77 rechecks the command grant at execution. **Warden remains the only authority that assigns global roles.**
+
+See [`docs/admin-console.md`](docs/admin-console.md).
+
+## Chat
+
+EventCore owns a skinnable in-game chat surface (**T** to open). Slash commands route through Open77's command registry and ACL. Keep `open77_chat` loaded so EventCore can disable the bundled UI while preserving transport. See [`docs/chat.md`](docs/chat.md).
+
+## Domain boundaries
+
+Gameplay resources remain authoritative for their own domains (inventory, clothing, missions, economy, vehicles). EventCore is the compatibility and persistence fallback when no domain service fits. Storage gives each trusted resource a separate SQL-backed namespace; mods cannot supply SQL or access another resource's namespace.
+
+See [`docs/rpcore-integration.md`](docs/rpcore-integration.md) and [`docs/persistence.md`](docs/persistence.md).
+
+## Install (server)
+
+1. Place this resource at `resources/eventcore/` (contents of the `eventcore/` folder in the release archive).
+2. Load **eventcore** before optional consumers (e.g. rpcore, freeroam).
+3. Ensure MariaDB / `OP77_DATABASE_CONNECTION` is configured if you use persistence.
+4. In Warden: grant EventCore permissions from `open77.lua`, enable required mods, review `dist/eventcore-hud.zip` hash.
+5. Restart the server.
+
+Client packages are installed by the official OPEN//77 launcher from the server's required-mod list. Do not nest a second `rpcore/` folder inside EventCore.
 
 ## Persistence and credentials
 
-EventCore uses Open77's built-in MySQL/MariaDB bridge from server scripts only. The server environment provides `OP77_DATABASE_CONNECTION`; database credentials never belong in this resource or its client scripts. Open77 must grant EventCore `database.access` in Warden. The schema is in [`docs/schema.sql`](docs/schema.sql).
-
-Event history is a bounded asynchronous audit queue, not a write-ahead log. Authoritative gameplay resources must explicitly save their state after accepted changes and load it at the correct lifecycle point. Client proposals are untrusted.
+EventCore uses Open77's MySQL/MariaDB bridge from server scripts only. Credentials come from `OP77_DATABASE_CONNECTION`; they never belong in this resource or client scripts. Open77 must grant `database.access` in Warden.
 
 ## Warden roles for tools
 
-EventCore exposes read-only `IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`
-exports for trusted server tools. They read Open77's effective ACL and recognize
-only the reserved `admin` and `owner` roles as global administrators. Scoped
-roles such as `helper`, `moderator`, and `operator` remain distinguishable.
-Warden assigns roles; EventCore never promotes players. EventCore declares `acl.read` in its resource manifest. Add each tool resource that needs these queries to `trustedAccessReaders` in `server/access.lua`.
+Trusted server tools may use read-only `IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`. Only reserved `admin` and `owner` count as global administrators. EventCore declares `acl.read` and never promotes players.
 
-## Compatibility and release
+## Compatibility and license
 
-The `0.3.1` archive includes read-only ACL role queries and remains separate from the earlier `0.2.0-beta.1` release. The service directory requires an Open77 server build with server-to-server exports and resource-generation APIs. Verify compatibility on the actual server before enabling it for players.
+EventCore source and documentation in this repository are licensed under the **MIT License** — see [`LICENSE`](LICENSE).
 
-For legacy adapters, see [`docs/legacy-compatibility.md`](docs/legacy-compatibility.md). EventCore does not patch RED4ext, Open77 binaries, or third-party native plugins. The planned custom-clothing boundary and stable outfit-code rules are in [`docs/server-managed-clothing.md`](docs/server-managed-clothing.md).
+**You must own a valid copy of Cyberpunk 2077 and Phantom Liberty** to run or use this software with the game. This project does not include or grant rights to CD PROJEKT RED's game content, graphics, or scripts.
 
-EventCore is All Rights Reserved. Permission is granted to download, install, and run this release on OPEN//77 servers through the OPEN//77 Workshop. Modification, resale, redistribution, and derivative works are not permitted. You must own a valid copy of Cyberpunk 2077 and Phantom Liberty to use this modification. This does not grant rights to CD PROJEKT RED's game content or graphics; follow the applicable game and mod terms.
+
+---
+
+## Docs index
+
+| Doc | Topic |
+|-----|--------|
+| [`docs/client-inkwidget-pipeline.md`](docs/client-inkwidget-pipeline.md) | Required client mod + RTTI surface |
+| [`docs/eventview.md`](docs/eventview.md) | LTEs, missions, targeting |
+| [`docs/native-hud.md`](docs/native-hud.md) | Native HUD bench and registry |
+| [`docs/admin-console.md`](docs/admin-console.md) | Admin panel and commands |
+| [`docs/chat.md`](docs/chat.md) | In-game chat |
+| [`docs/rpcore-integration.md`](docs/rpcore-integration.md) | Optional RPCore consumer contract |
+| [`docs/persistence.md`](docs/persistence.md) | SQL persistence |
+| [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) | Checkpoint status |
+| [`CHANGELOG.md`](CHANGELOG.md) | Version history |
+| [`PREVIEW.md`](PREVIEW.md) | Snapshot review notes (pre-push) |

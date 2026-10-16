@@ -264,8 +264,17 @@ local function syncTick()
     local generation = rpcoreGeneration()
     local replayAll = up and (link.up ~= true or generation ~= link.generation)
     link.up, link.generation = up, generation
-    if not up then log("down", "RPCore is not answering (" .. tostring(link.lastError) .. "); HUD updates will resume when it starts.")
-    else lastLog.down = nil end
+    if not up then
+        if config.warnIfRpcoreMissing == true then
+            log("down", "RPCore server resource not answering (" .. tostring(link.lastError) .. "); optional.")
+        elseif lastLog.down_once ~= true then
+            lastLog.down_once = true
+            print("[EventCore][hud] RPCore server resource not loaded (optional). inkWidget pipeline: dist/eventcore-hud.zip")
+        end
+    else
+        lastLog.down = nil
+        lastLog.down_once = nil
+    end
 
     local ids = onlineIds()
     if not ids then return end

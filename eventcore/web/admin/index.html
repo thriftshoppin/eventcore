@@ -45,6 +45,77 @@
       <div class="command-hint">EventCore requires global Warden admin; Open77 checks the command grant again.</div>
       <div id="tool-result" role="status" aria-live="polite"></div>
     </section>
+    <section class="bench" aria-label="Native HUD test bench">
+      <div class="section-heading"><h2>HUD test bench</h2><span>inkHUDLayer &middot; native game HUD</span></div>
+      <div class="bench-controls">
+        <select id="hud-player" aria-label="Target player"></select>
+        <select id="hud-kind" aria-label="Kind"><option value="controller">Controllers</option><option value="layer">Layers</option><option value="widget">Widgets</option><option value="blackboard">Blackboards</option></select>
+        <input id="hud-search" type="text" placeholder="Filter, e.g. health" aria-label="Filter names">
+        <select id="hud-action" aria-label="Action"><option>hide</option><option>show</option><option>status</option><option>introspect</option><option>restore</option></select>
+      </div>
+      <select id="hud-list" size="7" aria-label="Native names"></select>
+      <div id="hud-detail" class="command-hint"></div>
+      <div class="quick-tools">
+        <button id="hud-send" type="button">Send via server</button>
+        <button id="hud-local" type="button">Run locally</button>
+        <button id="hud-layer-hide" type="button">Hide inkHUDLayer</button>
+        <button id="hud-layer-show" type="button">Show inkHUDLayer</button>
+        <button id="hud-all-hide" type="button">Hide all HUD controllers</button>
+        <button id="hud-all-show" type="button">Show all HUD controllers</button>
+        <button id="hud-clear" type="button">Clear view</button>
+      </div>
+      <div class="section-heading"><h2>Schedule</h2><span>one step per line: &lt;ms&gt; &lt;show|hide|status&gt; &lt;name|hud|verified&gt;</span></div>
+      <textarea id="hud-sched" rows="5" spellcheck="false" aria-label="Schedule steps">0 hide inkHUDLayer
+2000 show inkHUDLayer
+3000 hide healthbarWidgetGameController
+4000 show healthbarWidgetGameController</textarea>
+      <div class="quick-tools">
+        <label class="loops">Loops <input id="hud-loops" type="number" min="1" max="10" value="1"></label>
+        <button id="hud-sched-send" type="button">Schedule on server</button>
+        <button id="hud-sched-stop" type="button">Stop my schedules</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>TIME</th><th>FROM</th><th>PLAYER</th><th>CALL</th><th>RESULT</th><th>MS</th></tr></thead><tbody id="hud-log"><tr><td colspan="7" class="empty">No HUD calls yet.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="bench eventview" aria-label="EventView LTE and missions">
+      <div class="section-heading"><h2>EventView</h2><span>LTEs · missions · target: player / nearest / group / all</span></div>
+      <p class="command-hint">Schedule limited-time events across the server, a role group, the nearest player, or one player. Trusted mods write per-player missions via <code>EventViewMissionSet</code>.</p>
+      <div class="bench-controls">
+        <select id="ev-target" aria-label="Target">
+          <option value="all">all players</option>
+          <option value="nearest">nearest player</option>
+          <option value="player">player id…</option>
+          <option value="group:admin">group:admin</option>
+          <option value="group:moderator">group:moderator</option>
+        </select>
+        <input id="ev-player-id" type="number" min="1" placeholder="player id" aria-label="Player id" style="width:6rem">
+        <input id="ev-label" type="text" maxlength="64" placeholder="LTE label" aria-label="LTE label">
+        <label class="loops">Loops <input id="ev-loops" type="number" min="1" max="20" value="1"></label>
+      </div>
+      <div class="section-heading"><h2>LTE steps</h2><span>one per line: &lt;ms&gt; hud &lt;show|hide|status&gt; &lt;name&gt;  ·  or  &lt;ms&gt; widget &lt;id&gt; k=v …  ·  or  &lt;ms&gt; mission &lt;id&gt; title=…</span></div>
+      <textarea id="ev-steps" rows="6" spellcheck="false" aria-label="EventView steps">0 hud hide inkHUDLayer
+2000 hud show inkHUDLayer
+0 mission welcome title=Welcome status=active
+</textarea>
+      <div class="quick-tools">
+        <button id="ev-sched-send" type="button">Schedule LTE</button>
+        <button id="ev-sched-stop" type="button">Cancel LTEs</button>
+        <button id="ev-targets" type="button">Resolve targets</button>
+        <button id="ev-mission-list" type="button">List missions</button>
+        <button id="ev-watch" type="button">Watch log</button>
+        <button id="ev-clear" type="button">Clear view</button>
+      </div>
+      <div class="section-heading"><h2>Mission quick set</h2><span>writes the same mission to every resolved target</span></div>
+      <div class="bench-controls">
+        <input id="ev-mission-id" type="text" maxlength="64" placeholder="mission id" aria-label="Mission id">
+        <input id="ev-mission-title" type="text" maxlength="80" placeholder="title" aria-label="Mission title">
+        <input id="ev-mission-status" type="text" maxlength="32" placeholder="status (active)" aria-label="Mission status">
+        <button id="ev-mission-set" type="button">Set mission</button>
+        <button id="ev-mission-clear" type="button">Clear mission</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>KIND</th><th>DETAIL</th><th>PLAYER</th><th>RESULT</th></tr></thead><tbody id="ev-log"><tr><td colspan="5" class="empty">No EventView activity yet.</td></tr></tbody></table></div>
+    </section>
+
     <section class="runtime" aria-label="EventCore runtime">
       <div class="runtime-column">
         <div class="section-heading"><h2>Service directory</h2></div>
@@ -64,6 +135,7 @@
       <span>Commands: <code>/eventcore.admin</code> · <code>/eventcore.admins</code> · <code>/eventcore.roles &lt;id&gt;</code></span>
     </footer>
   </main>
+  <script src="native_registry.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
