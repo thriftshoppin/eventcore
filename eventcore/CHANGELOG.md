@@ -11,6 +11,7 @@
 - Added the server HUD test bench (`server/hud_bench.lua`) and a "HUD test bench" section in the admin panel: send a call to any player, run it locally for comparison, run `inkHUDLayer` or all-controller sweeps, schedule timed steps (server validates, client plays them back) and watch every result in a live event viewer. Commands: `/eventcore.hud.test`, `/eventcore.hud.schedule`, `/eventcore.hud.log`, `/eventcore.hud.cancel`. Global admin only; see `docs/native-hud.md`.
 
 ## Unreleased
+- Docs: replaced `docs/schema.sql` with a commented reference copy (table purposes, identity keys, limits); the table definitions are unchanged and match `server/persistence.lua`. README and `docs/persistence.md` now state that EventCore creates its tables automatically.
 - Docs: game-ownership notice (Cyberpunk 2077 + Phantom Liberty); project code is MIT as of 0.8.0.
 - Docs: refreshed `AGENTS.md` and `docs/IMPLEMENTATION_STATUS.md` after the 2026-10-11 in-game test. Removed the outdated 0.6.5/0.3.3 test-bench diagnosis, "uncommitted" and "not deployed" notes, and the stale test-server path.
 - Docs: `open77_chat` must be listed in `resources.load` (the manifest does not enforce it); documented the symptom when it is missing.

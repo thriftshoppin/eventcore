@@ -125,6 +125,8 @@ Client packages are installed by the official OPEN//77 launcher from the server'
 
 EventCore uses Open77's MySQL/MariaDB bridge from server scripts only. Credentials come from `OP77_DATABASE_CONNECTION`; they never belong in this resource or client scripts. Open77 must grant `database.access` in Warden.
 
+You do not need to run any SQL by hand: EventCore creates its four tables (`eventcore_events`, `eventcore_player_state`, `eventcore_resource_state`, `eventcore_resource_player_state`) on first start. [`docs/schema.sql`](docs/schema.sql) is the commented reference copy of that schema, kept in sync with `server/persistence.lua`. Use a dedicated database account limited to EventCore's database.
+
 ## Warden roles for tools
 
 Trusted server tools may use read-only `IsAdmin`, `GetPlayerRoles`, and `GetOnlineAdmins`. Only reserved `admin` and `owner` count as global administrators. EventCore declares `acl.read` and never promotes players.
@@ -149,6 +151,7 @@ EventCore source and documentation in this repository are licensed under the **M
 | [`docs/chat.md`](docs/chat.md) | In-game chat |
 | [`docs/rpcore-integration.md`](docs/rpcore-integration.md) | Optional RPCore consumer contract |
 | [`docs/persistence.md`](docs/persistence.md) | SQL persistence |
+| [`docs/schema.sql`](docs/schema.sql) | Reference schema (tables are created automatically) |
 | [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) | Checkpoint status |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history |
 | [`PREVIEW.md`](PREVIEW.md) | Snapshot review notes (pre-push) |

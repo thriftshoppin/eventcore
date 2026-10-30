@@ -128,6 +128,8 @@ EventCore persists map definitions only: a trusted consumer such as RPCore store
 
 ## Tables
 
+EventCore creates these tables itself on startup (`CREATE TABLE IF NOT EXISTS` in `server/persistence.lua`), so operators do not run SQL manually. [`schema.sql`](schema.sql) is the commented reference copy of the same definitions; update it whenever a `CREATE_*` statement in `server/persistence.lua` changes.
+
 - `eventcore_events` is append-only event history. `source_id` is a session number for audit context (`0` indicates a server-originated event), not a durable player key. `occurred_ms` is the process-monotonic event timestamp (`0` if unavailable); `created_at` is the SQL server's timestamp.
 - `eventcore_player_state` is the legacy compatibility table keyed by `(identity_type, identity_id, namespace, state_key)`. It does not have a resource-owner column; new resources must use the isolated storage API instead.
 - `eventcore_resource_state` holds shared resource-owned records keyed by `(resource_name, collection, state_key)`.
